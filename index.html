@@ -701,6 +701,17 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
 <footer>臺師大 阿美族語基礎班 · 族語認證評量系統 · 2026</footer>
 
 <script>
+// 💡 新增：全域音檔互斥機制 (保證任何時候都只有一個聲音在播放)
+document.addEventListener('play', function(e) {
+  if (e.target.tagName === 'AUDIO') {
+    document.querySelectorAll('audio').forEach(audio => {
+      if (audio !== e.target) {
+        audio.pause();
+      }
+    });
+  }
+}, true); // 使用 true (捕獲階段) 確保能攔截到所有播放事件
+
 let wakeLock = null;
 async function requestWakeLock() {
   try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(err){}
@@ -727,8 +738,20 @@ const STORY_TASKS = [
   { 
     id:'A', 
     label:'A：數字與代名詞', 
-    sentence: 'Papina ku malekakaay nu misu?', 
-    audio: 'https://klokah.tw/extension/sp_junior/sound/1/6match/1_4_A.mp3', 
+    sentence: {
+      MA: 'Papinaay ko salikaka iso?',
+      NA: 'Papina ku malekakaay nu misu?',
+      SA: 'Papina ko salikaka no miso?',
+      HA: 'Papina ko salikaka iso?'
+    }, 
+    audio: {
+      MA: 'https://klokah.tw/extension/sp_junior/sound/4/6match/1_3_A.mp3',
+      NA: 'https://klokah.tw/extension/sp_junior/sound/1/6match/1_4_A.mp3',
+      SA: 'https://klokah.tw/extension/sp_junior/sound/2/6match/1_3_A.mp3',
+      HA: 'https://klokah.tw/extension/sp_junior/sound/3/6match/1_3_A.mp3'
+    }, 
+    sentenceAnswer: '請替換成答題範例文本 (例如: Tusa ku malekakaay nu maku.)', 
+    audioAnswer: '', 
     img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778367058/Gemini_Generated_Image_i80sd6i80sd6i80s_hhxhww.png', 
     vocab:[
       {z:'1', MA:'cecay', NA:'cacay', SA:'cecay', HA:'cecay'},
@@ -928,6 +951,8 @@ window.filterStudents = d => { updateTabs('#teacher-mode .dialect-nav:nth-of-typ
 window.filterStudents2 = d => { updateTabs('#student-mode .dialect-nav:nth-of-type(1) .dtab', d); renderStudents('student-list', d); }
 window.filterStudents3 = d => { updateTabs('#async-mode .dialect-nav:nth-of-type(1) .dtab', d); renderStudents('async-student-list', d); }
 
+function getD(val, dialect) { return typeof val === 'object' && val !== null ? (val[dialect] || val['MA'] || '') : (val || ''); }
+
 function renderStorySection(containerId, prefix) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
@@ -941,9 +966,17 @@ function renderStorySection(containerId, prefix) {
         <div class="task-header"><h3>${t.label}</h3><span class="task-tag">PICTURE TASK</span></div>
         ${t.sentence ? `
         <div style="padding: 1rem 1.5rem; background: var(--bg); border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
-          <div style="font-size: 1.3rem; font-weight: 900; color: var(--text);">${t.sentence}</div>
-          <audio controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
-            <source src="${t.audio || ''}" type="audio/mp4">
+          <div class="q-sentence" data-ma="${getD(t.sentence, 'MA')}" data-na="${getD(t.sentence, 'NA')}" data-sa="${getD(t.sentence, 'SA')}" data-ha="${getD(t.sentence, 'HA')}" style="font-size: 1.2rem; font-weight: 900; color: var(--text);">❓ 問題：${getD(t.sentence, 'MA')}</div>
+          <audio class="q-audio" data-ma="${getD(t.audio, 'MA')}" data-na="${getD(t.audio, 'NA')}" data-sa="${getD(t.audio, 'SA')}" data-ha="${getD(t.audio, 'HA')}" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+            <source src="${getD(t.audio, 'MA')}" type="audio/mp4">
+            您的瀏覽器不支援音檔播放。
+          </audio>
+        </div>` : ''}
+        ${t.sentenceAnswer ? `
+        <div style="padding: 1rem 1.5rem; background: #E8F5E9; border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
+          <div class="a-sentence" data-ma="${getD(t.sentenceAnswer, 'MA')}" data-na="${getD(t.sentenceAnswer, 'NA')}" data-sa="${getD(t.sentenceAnswer, 'SA')}" data-ha="${getD(t.sentenceAnswer, 'HA')}" style="font-size: 1.2rem; font-weight: 900; color: var(--success);">💡 答題範例：${getD(t.sentenceAnswer, 'MA')}</div>
+          <audio class="a-audio" data-ma="${getD(t.audioAnswer, 'MA')}" data-na="${getD(t.audioAnswer, 'NA')}" data-sa="${getD(t.audioAnswer, 'SA')}" data-ha="${getD(t.audioAnswer, 'HA')}" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+            <source src="${getD(t.audioAnswer, 'MA')}" type="audio/mp4">
             您的瀏覽器不支援音檔播放。
           </audio>
         </div>` : ''}
@@ -986,9 +1019,31 @@ window.setReadingDialect = d => {
     qLink.style.background = DIALECTS[d].color;
   }
 
-  // 同步更新 Task 2 的提示詞彙
+  // 同步更新 Task 2 的提示詞彙、問題與音檔
   document.querySelectorAll('#story-section-sync .vword').forEach(el => {
     el.textContent = el.dataset[d.toLowerCase()];
+  });
+  document.querySelectorAll('#story-section-sync .q-sentence').forEach(el => {
+    el.textContent = '❓ 問題：' + el.dataset[d.toLowerCase()];
+  });
+  document.querySelectorAll('#story-section-sync .q-audio').forEach(el => {
+    const src = el.dataset[d.toLowerCase()];
+    const source = el.querySelector('source');
+    if (source && source.getAttribute('src') !== src) {
+      source.src = src;
+      el.load();
+    }
+  });
+  document.querySelectorAll('#story-section-sync .a-sentence').forEach(el => {
+    el.textContent = '💡 答題範例：' + el.dataset[d.toLowerCase()];
+  });
+  document.querySelectorAll('#story-section-sync .a-audio').forEach(el => {
+    const src = el.dataset[d.toLowerCase()];
+    const source = el.querySelector('source');
+    if (source && source.getAttribute('src') !== src) {
+      source.src = src;
+      el.load();
+    }
   });
 }
 window.setAsyncDialect = d => {
@@ -1005,9 +1060,31 @@ window.setAsyncDialect = d => {
     qLink.style.background = DIALECTS[d].color;
   }
 
-  // 同步更新 Task 2 的提示詞彙
+  // 同步更新 Task 2 的提示詞彙、問題與音檔
   document.querySelectorAll('#story-section-async .vword').forEach(el => {
     el.textContent = el.dataset[d.toLowerCase()];
+  });
+  document.querySelectorAll('#story-section-async .q-sentence').forEach(el => {
+    el.textContent = '❓ 問題：' + el.dataset[d.toLowerCase()];
+  });
+  document.querySelectorAll('#story-section-async .q-audio').forEach(el => {
+    const src = el.dataset[d.toLowerCase()];
+    const source = el.querySelector('source');
+    if (source && source.getAttribute('src') !== src) {
+      source.src = src;
+      el.load();
+    }
+  });
+  document.querySelectorAll('#story-section-async .a-sentence').forEach(el => {
+    el.textContent = '💡 答題範例：' + el.dataset[d.toLowerCase()];
+  });
+  document.querySelectorAll('#story-section-async .a-audio').forEach(el => {
+    const src = el.dataset[d.toLowerCase()];
+    const source = el.querySelector('source');
+    if (source && source.getAttribute('src') !== src) {
+      source.src = src;
+      el.load();
+    }
   });
 }
 
