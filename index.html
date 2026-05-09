@@ -587,12 +587,20 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
         <div class="ltimer-num">PHASE 1</div>
         <div class="ltimer-disp" id="lt1">02分00秒</div>
         <div class="ltimer-label">準備時間 (PREP)</div>
+        <div style="font-size:0.8rem; font-weight:700; color:var(--text2); margin-bottom:0.3rem;">🔊 播放準備說明：</div>
+        <audio id="async-audio-1" controls style="width: 100%; height: 36px; border-radius: 50px; border: 2px solid var(--ink); background: #fff; margin-bottom: 1rem;">
+          <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778337250/voice_260717_occ8bc.mp4" type="audio/mp4">
+        </audio>
         <button class="ltimer-btn btn-style" id="lt1-btn" onclick="toggleLTimer(1)">開始計時</button>
       </div>
       <div class="ltimer-card">
         <div class="ltimer-num">PHASE 2</div>
-        <div class="ltimer-disp" id="lt2">02分00秒</div>
+        <div class="ltimer-disp" id="lt2">01分30秒</div>
         <div class="ltimer-label">作答時間 (ANSWER)</div>
+        <div style="font-size:0.8rem; font-weight:700; color:var(--text2); margin-bottom:0.3rem;">🔊 播放作答說明：</div>
+        <audio id="async-audio-2" controls style="width: 100%; height: 36px; border-radius: 50px; border: 2px solid var(--ink); background: #fff; margin-bottom: 1rem;">
+          <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778342420/voice_260762_mgbisy.mp4" type="audio/mp4">
+        </audio>
         <button class="ltimer-btn btn-style" id="lt2-btn" onclick="toggleLTimer(2)">開始計時</button>
       </div>
     </div>
@@ -1147,20 +1155,43 @@ function resetSyncTimer() {
   document.getElementById('sync-active').classList.add('hidden');
 }
 
-const ltState = { 1:null, 2:null }, ltRemaining = { 1:120, 2:120 }, ltEndTimes = { 1:null, 2:null };
+const ltState = { 1:null, 2:null }, ltEndTimes = { 1:null, 2:null };
+const ltDefaults = { 1:120, 2:90 }; // Phase 1=120秒, Phase 2=90秒
+const ltRemaining = { 1:120, 2:90 };
+
 window.toggleLTimer = n => {
   const btn = document.getElementById('lt'+n+'-btn'), disp = document.getElementById('lt'+n);
+  
+  // 若倒數已歸零，重置時間以供下一題重複使用
+  if (ltRemaining[n] <= 0) { ltRemaining[n] = ltDefaults[n]; disp.classList.remove('urgent'); }
+
   if (ltState[n]) {
     clearInterval(ltState[n]); ltState[n] = null; ltEndTimes[n] = null;
-    btn.textContent = '繼續計時'; btn.classList.remove('running'); disp.classList.remove('running'); return;
+    btn.textContent = '繼續計時'; btn.classList.remove('running'); disp.classList.remove('running');
+    const audioEl = document.getElementById('async-audio-'+n);
+    if(audioEl) audioEl.pause();
+    return;
   }
+  
   btn.textContent = '暫停一下'; btn.classList.add('running'); disp.classList.add('running');
   ltEndTimes[n] = Date.now() + (ltRemaining[n] * 1000);
+
+  // 如果是全新開始，自動播放說明音檔
+  if (ltRemaining[n] === ltDefaults[n]) {
+    const audioEl = document.getElementById('async-audio-'+n);
+    if (audioEl) { audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }
+  }
+
   ltState[n] = setInterval(() => {
     ltRemaining[n] = Math.max(0, Math.ceil((ltEndTimes[n] - Date.now()) / 1000));
     disp.textContent = `${String(Math.floor(ltRemaining[n]/60)).padStart(2,'0')}分${String(ltRemaining[n]%60).padStart(2,'0')}秒`;
     if (ltRemaining[n] <= 10) disp.classList.add('urgent');
-    if (ltRemaining[n] <= 0) { clearInterval(ltState[n]); ltState[n] = null; disp.textContent = '00分00秒'; btn.textContent = '時間到'; btn.disabled = true; }
+    if (ltRemaining[n] <= 0) { 
+      clearInterval(ltState[n]); ltState[n] = null; 
+      disp.textContent = '00分00秒'; 
+      btn.textContent = '重新計時'; 
+      btn.classList.remove('running'); 
+    }
   }, 1000);
 };
 
