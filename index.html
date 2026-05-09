@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿美族語基礎班 考試系統</title>
+<!-- 引入比較圓潤、活潑的字體 -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Noto+Sans+TC:wght@500;700;900&family=DM+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA1wcsO7rMykLJfoX0bAQto7gaVzpgNqa8",
+    authDomain: "ntnu-amis-exam.firebaseapp.com",
+    databaseURL: "https://ntnu-amis-exam-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "ntnu-amis-exam",
+    storageBucket: "ntnu-amis-exam.firebasestorage.app",
+    messagingSenderId: "1003066278077",
+    appId: "1:1003066278077:web:8756c62f43d7e4ca56f7d4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // 新增：取得 Firebase 伺服器絕對時間，消除老師與學生間的裝置時間誤差
+  window.serverTimeOffset = 0;
+  onValue(ref(db, '.info/serverTimeOffset'), (snap) => {
+    window.serverTimeOffset = snap.val() || 0;
+  });
+  window.getTrueTime = () => Date.now() + window.serverTimeOffset;
+
+  window.teacherStartExam = async function(task, prepSecs = 120, answerSecs = 120, customStart = null) {
+    const now = customStart || window.getTrueTime();
+    const phase = prepSecs > 0 ? 'prepare' : 'answer';
+    await set(ref(db, 'exam/current'), {
+      task: task, phase: phase, startedAt: now, prepSecs: prepSecs, answerSecs: answerSecs
+    });
+  };
+
+  window.teacherResetExam = async function() {
+    await set(ref(db, 'exam/current'), { task: null, phase: 'idle' });
+  };
+
+  window.listenExam = function(callback) {
+    onValue(ref(db, 'exam/current'), (snapshot) => callback(snapshot.val()));
+  };
+</script>
+
+<style>
+:root {
+  /* 南島卡通風色票 (Austronesian Cartoon Tones) */
+  --bg: #FFF4E0; /* 暖米黃色背景 */
+  --surface: #FFFFFF;
+  
+  --ink: #3E2723; /* 粗邊框深咖啡色，取代純黑 */
+  
+  --primary: #E63946; /* 阿美紅 */
+  --sun: #FFB703;     /* 太陽黃 */
+  --leaf: #8CB369;    /* 檳榔葉綠 */
+  
+  --text: #3E2723;
+  --text2: #5D4037;
+  --text3: #8D6E63;
+  
+  /* 語系專屬卡通色 */
+  --ma: #028090; /* 馬蘭藍 */
+  --na: #00A896; /* 南勢綠 */
+  --sa: #F4A261; /* 秀姑巒橘 */
+  --ha: #9D4EDD; /* 海岸紫 */
+  
+  --danger: #E63946;
+  --success: #00A896;
+  
+  /* 卡通立體陰影 */
+  --shadow-sm: 2px 2px 0px var(--ink);
+  --shadow-md: 4px 4px 0px var(--ink);
+  --shadow-lg: 6px 6px 0px var(--ink);
+  
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+  background-color: var(--bg);
+  /* 民族風點陣背景 */
+  background-image: radial-gradient(var(--ink) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── 共用卡通卡片 ── */
+.cartoon-panel {
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+}
+
+/* ── 按鈕共用邏輯 ── */
+button, .btn-style {
+  transition: all 0.1s ease;
+}
+button:active, .btn-style:active, .mode-card:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 0px 0px 0px var(--ink) !important;
+}
+
+/* ── MODE SELECTOR ── */
+.mode-selector {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2.5rem; padding: 2rem;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--ink) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+.mode-selector h1 {
+  font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 900;
+  color: var(--surface);
+  text-shadow: 3px 3px 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--sun) 100%);
+  -webkit-background-clip: text; 
+  text-align: center; margin-bottom: 0.5rem; letter-spacing: 0.05em;
+}
+
+.mode-selector p { color: var(--text); font-size: 1.1rem; font-weight: 700; background: var(--surface); padding: 0.2rem 1rem; border: 2px solid var(--ink); border-radius: 50px; box-shadow: var(--shadow-sm); display: inline-block; }
+
+.mode-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; width: 100%; max-width: 760px; }
+
+.mode-card {
+  background: var(--surface); border: 3px solid var(--ink);
+  border-radius: var(--radius-lg); padding: 2.5rem 2rem;
+  cursor: pointer; text-align: center; box-shadow: var(--shadow-md);
+  position: relative; overflow: hidden;
+}
+.mode-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 12px;
+  background: var(--primary); border-bottom: 3px solid var(--ink);
+}
+.mode-card:nth-child(2)::before { background: var(--na); }
+.mode-card:nth-child(3)::before { background: var(--sun); }
+
+.mode-card:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-lg); }
+.mode-card .icon { font-size: 3rem; margin-bottom: 1rem; display: inline-flex; align-items: center; justify-content: center; height: 64px; }
+.mode-card .icon img { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); object-fit: cover; box-shadow: 2px 2px 0px var(--ink); background: var(--surface); }
+.mode-card h3 { font-size: 1.25rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--text); }
+.mode-card p { font-size: 0.95rem; color: var(--text2); font-weight: 700; }
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--surface);
+  border-bottom: 4px solid var(--ink); padding: 1rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+header::before {
+  content: ''; position: absolute; bottom: -12px; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(-45deg, var(--primary) 0, var(--primary) 10px, var(--sun) 10px, var(--sun) 20px, var(--ink) 20px, var(--ink) 23px);
+  border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+}
+
+.header-left h1 { font-size: 1.3rem; font-weight: 900; color: var(--text); text-shadow: 1px 1px 0px var(--sun); }
+.header-left p { font-size: 0.8rem; color: var(--text2); font-family: 'DM Mono', monospace; font-weight: 700; margin-top: 0.15rem; }
+
+.mode-badge {
+  font-family: 'DM Mono', monospace; font-size: 0.75rem; padding: 0.4rem 1rem;
+  border-radius: 50px; font-weight: 700; border: 2px solid var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.mode-badge.teacher { background: var(--primary); color: #fff; }
+.mode-badge.student { background: var(--na); color: #fff; }
+.mode-badge.async { background: var(--sun); color: var(--ink); }
+
+.back-btn {
+  background: var(--surface); border: 2px solid var(--ink); color: var(--text);
+  font-size: 0.8rem; padding: 0.4rem 1rem; border-radius: 50px; cursor: pointer;
+  font-weight: 700; box-shadow: var(--shadow-sm);
+}
+.back-btn:hover { background: #E0E0E0; }
+
+/* ── SPLIT VIEW (雙視窗排版) ── */
+.mode-wrapper { width: 100%; display: block; }
+.mode-wrapper.split-active { display: flex; align-items: flex-start; height: 100vh; overflow: hidden; }
+.mode-wrapper.split-active > #teacher-mode, 
+.mode-wrapper.split-active > #student-mode { 
+  height: 100%; overflow-y: auto; padding-bottom: 20vh; 
+}
+.mode-wrapper.split-active header { display: none; } /* 雙視窗時隱藏頂部避免佔空間 */
+.mode-wrapper.split-active > #teacher-mode { width: 45%; border-right: 6px dashed var(--ink); }
+.mode-wrapper.split-active > #student-mode { width: 55%; background: rgba(255, 255, 255, 0.4); }
+.mode-wrapper.split-active main { max-width: 100%; padding: 2rem; margin: 0; }
+
+@media (max-width: 1024px) {
+  .mode-wrapper.split-active { flex-direction: column; }
+  .mode-wrapper.split-active > #teacher-mode { width: 100%; border-right: none; border-bottom: 6px dashed var(--ink); }
+  .mode-wrapper.split-active > #student-mode { width: 100%; }
+}
+
+/* ── MAIN ── */
+main { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+/* ── SECTION TITLE ── */
+.sec-title { display: flex; align-items: flex-end; gap: 1rem; margin-bottom: 1.5rem; position: relative; }
+.sec-title h2 { font-size: 1.6rem; font-weight: 900; color: var(--text); line-height: 1; text-shadow: 2px 2px 0px var(--sun); }
+.sec-title .line { flex: 1; height: 4px; background: var(--ink); margin-bottom: 0.4rem; border-radius: 50px; }
+.sec-num { background: var(--ink); color: #fff; padding: 0.2rem 0.6rem; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.2rem; transform: rotate(-3deg); }
+
+/* ── DIALECT TABS ── */
+.dialect-nav { display: flex; gap: 0.6rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.dtab {
+  padding: 0.5rem 1.25rem; border-radius: 12px; border: 2px solid var(--ink); background: var(--surface);
+  font-family: 'Fredoka', 'Noto Sans TC', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text);
+  cursor: pointer; box-shadow: var(--shadow-sm);
+}
+.dtab:hover { background: #f0f0f0; }
+.dtab.active { box-shadow: 0px 0px 0px var(--ink); transform: translate(2px, 2px); }
+.dtab[data-d="MA"].active { background: var(--ma); color: #fff; }
+.dtab[data-d="NA"].active { background: var(--na); color: #fff; }
+.dtab[data-d="SA"].active { background: var(--sa); color: #fff; }
+.dtab[data-d="HA"].active { background: var(--ha); color: #fff; }
+.dtab[data-d="ALL"].active { background: var(--text); color: #fff; }
+
+/* ── STUDENT LIST ── */
+.student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 3rem; }
+.student-card {
+  background: var(--surface); border: 3px solid var(--ink); border-radius: var(--radius-md);
+  padding: 1rem; display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-sm); font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.student-card:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-md); }
+.student-card.selected { background: var(--sun); transform: translate(-2px, -2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+.student-card .sname { font-size: 1rem; color: var(--text); }
+.student-card .sdialect {
+  font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 900;
+  padding: 0.2rem 0.6rem; border-radius: 8px; border: 2px solid var(--ink);
+}
+.student-card[data-d="SA"] .sdialect { background: var(--sa); color: #fff; }
+.student-card[data-d="HA"] .sdialect { background: var(--ha); color: #fff; }
+.student-card[data-d="MA"] .sdialect { background: var(--ma); color: #fff; }
+.student-card[data-d="NA"] .sdialect { background: var(--na); color: #fff; }
+
+/* ── TEACHER CONTROLS ── */
+.teacher-panel { padding: 2rem 2.5rem; margin-bottom: 3rem; background: var(--surface); position: relative; }
+.panel-logo { position: absolute; top: -25px; right: 25px; width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); background: var(--surface); box-shadow: var(--shadow-sm); object-fit: cover; transform: rotate(5deg); }
+.teacher-panel h3 { font-size: 1.1rem; color: var(--text); font-weight: 900; margin-bottom: 1.5rem; display: inline-block; background: var(--sun); padding: 0.2rem 0.8rem; border-radius: 8px; border: 2px solid var(--ink); transform: rotate(-1deg); }
+.task-btns { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.task-start-btn {
+  padding: 0.85rem 1.5rem; border-radius: 12px; border: 3px solid var(--ink);
+  background: var(--ma); color: #fff; font-size: 1rem; font-weight: 900;
+  cursor: pointer; box-shadow: var(--shadow-sm);
+}
+.task-start-btn.danger { background: var(--surface); color: var(--danger); }
+.task-start-btn:hover { background: #016b78; }
+.task-start-btn.danger:hover { background: #ffebeb; }
+
+.teacher-status {
+  background: var(--bg); border-radius: 12px; padding: 1rem 1.5rem; border: 3px solid var(--ink);
+  font-size: 1rem; color: var(--text); font-weight: 700; display: flex; align-items: center; box-shadow: inset 2px 2px 0px rgba(0,0,0,0.05);
+}
+.teacher-status .status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--text3); border: 2px solid var(--ink); margin-right: 0.75rem; }
+.teacher-status .status-dot.live { background: var(--success); }
+
+/* ── SYNC TIMER (BIG) ── */
+.sync-timer-wrap { padding: 3rem 2rem; text-align: center; margin-bottom: 3rem; position: relative; background: var(--surface); border: 4px solid var(--ink); }
+.phase-label { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 900; background: var(--sun); color: var(--ink); display: inline-block; padding: 0.2rem 1rem; border: 2px solid var(--ink); border-radius: 12px; margin-bottom: 1rem; transform: rotate(2deg); box-shadow: 2px 2px 0px var(--ink); }
+.big-timer { font-family: 'DM Mono', 'Noto Sans TC', monospace; font-size: clamp(3rem, 12vw, 6rem); font-weight: 900; color: var(--text); line-height: 1; margin-bottom: 0.5rem; text-shadow: 4px 4px 0px var(--sun); }
+.big-timer.prepare { text-shadow: 4px 4px 0px var(--sun); }
+.big-timer.answer { text-shadow: 4px 4px 0px var(--na); }
+.big-timer.urgent { color: var(--danger); text-shadow: 4px 4px 0px var(--ink); animation: bounce 0.5s infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+.phase-desc { font-size: 1.1rem; color: var(--text); font-weight: 700; }
+
+.progress-bar-wrap { background: var(--bg); border: 3px solid var(--ink); border-radius: 50px; height: 24px; margin: 2rem auto 0; max-width: 400px; overflow: hidden; box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1); }
+.progress-bar { height: 100%; border-right: 3px solid var(--ink); background: var(--sun); transition: width 1s linear; }
+.progress-bar.answer { background: var(--na); }
+.progress-bar.urgent { background: var(--danger); }
+.waiting-msg { padding: 2rem; color: var(--text); font-size: 1.2rem; font-weight: 900; }
+
+/* ── EXAM IMAGE BLOCK ── */
+.task-block { background: var(--surface); border: 3px solid var(--ink); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 2rem; box-shadow: var(--shadow-md); }
+.task-header { padding: 1rem 1.5rem; border-bottom: 3px solid var(--ink); display: flex; align-items: center; justify-content: space-between; background: var(--bg); }
+.task-header h3 { font-size: 1.1rem; font-weight: 900; color: var(--text); }
+.task-tag { font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 900; padding: 0.2rem 0.6rem; border-radius: 8px; background: var(--primary); color: #fff; border: 2px solid var(--ink); transform: rotate(-2deg); }
+.exam-image-wrap { padding: 2rem 1.5rem; background: #fff; display: flex; justify-content: center; min-height: 250px; align-items: center; background-image: radial-gradient(var(--bg) 2px, transparent 2px); background-size: 20px 20px; }
+.exam-image { max-width: 100%; max-height: 600px; border-radius: 16px; border: 3px solid var(--ink); object-fit: contain; box-shadow: var(--shadow-md); background: #fff; }
+
+/* ── VOCAB HINTS ── */
+.vocab-hint { padding: 1.5rem 1.5rem; border-top: 3px solid var(--ink); background: var(--bg); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: center; }
+.vocab-label { font-size: 1.2rem; font-weight: 900; color: var(--text); background: var(--sun); padding: 0.3rem 0.8rem; border: 2px solid var(--ink); border-radius: 8px; margin-right: 0.5rem; }
+.vpill { background: #fff; border-radius: 16px; padding: 0.6rem 1.2rem; font-size: 1.4rem; color: var(--text); font-weight: 700; border: 2px solid var(--ink); box-shadow: 2px 2px 0px var(--ink); }
+.vpill .zh { color: var(--primary); font-size: 1.1rem; margin-left: 0.6rem; font-weight: 900; }
+
+/* ── RECORDING ── */
+.rec-section { padding: 1.25rem 1.5rem; border-top: 3px solid var(--ink); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; background: var(--surface); }
+.rec-label { font-size: 1rem; color: var(--text); font-weight: 900; }
+.rec-btn { padding: 0.6rem 1.2rem; border-radius: 12px; border: 3px solid var(--ink); background: var(--leaf); color: #fff; font-size: 1rem; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; }
+.rec-btn.recording { background: var(--danger); box-shadow: inset 3px 3px 0px rgba(0,0,0,0.2); transform: translate(2px, 2px); }
+.rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); display: inline-block; }
+.rec-btn.recording .rec-dot { animation: pulse 0.5s alternate infinite; }
+@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.3); } }
+.dl-btn { padding: 0.6rem 1.2rem; border-radius: 12px; border: 3px solid var(--ink); background: var(--bg); color: var(--text); font-size: 1rem; font-weight: 900; cursor: pointer; text-decoration: none; opacity: 0.5; pointer-events: none; box-shadow: var(--shadow-sm); }
+.dl-btn.ready { opacity: 1; pointer-events: auto; background: var(--sun); }
+
+.playback-audio { height: 44px; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); outline: none; max-width: 200px; }
+
+/* ── UPLOAD ── */
+.upload-strip { padding: 1.5rem 2rem; margin-top: 3rem; display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; justify-content: space-between; background: var(--ma); color: #fff; border: 4px solid var(--ink); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); position: relative; }
+.upload-strip::after { content: '✨'; position: absolute; top: -15px; left: 20px; font-size: 2rem; }
+.upload-strip p { font-size: 1rem; font-weight: 700; }
+.upload-strip p strong { color: var(--sun); font-size: 1.2rem; font-weight: 900; display: block; margin-bottom: 0.25rem; text-shadow: 2px 2px 0px var(--ink); }
+.upload-btn { padding: 0.8rem 1.5rem; border-radius: 12px; background: var(--sun); color: var(--ink); font-size: 1rem; font-weight: 900; text-decoration: none; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); }
+
+/* ── ASYNC LOCAL TIMERS ── */
+.local-timers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+.ltimer-card { padding: 2rem; text-align: center; border: 3px solid var(--ink); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-md); }
+.ltimer-num { font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 900; background: var(--leaf); color: #fff; display: inline-block; padding: 0.2rem 0.8rem; border: 2px solid var(--ink); border-radius: 8px; margin-bottom: 0.75rem; transform: rotate(-2deg); }
+.ltimer-disp { font-family: 'DM Mono', 'Noto Sans TC', monospace; font-size: 2.8rem; font-weight: 900; color: var(--text); margin-bottom: 0.5rem; text-shadow: 3px 3px 0px var(--sun); }
+.ltimer-disp.running { text-shadow: 3px 3px 0px var(--ma); }
+.ltimer-disp.urgent { color: var(--danger); text-shadow: 3px 3px 0px var(--ink); }
+.ltimer-label { font-size: 1rem; color: var(--text); font-weight: 900; margin-bottom: 1.5rem; }
+.ltimer-btn { width: 100%; padding: 0.8rem; border-radius: 12px; border: 3px solid var(--ink); background: var(--surface); color: var(--text); font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: var(--shadow-sm); }
+.ltimer-btn.running { background: var(--sun); box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1); transform: translate(2px, 2px); }
+
+.sep { height: 6px; background: var(--ink); margin: 4rem 0; border-radius: 50px; }
+.hidden { display: none !important; }
+
+/* 新增：修正繪本區塊全部疊在一起的 Bug */
+.story-panel { display: none; }
+.story-panel.active { display: block; }
+
+/* ── MODAL (密碼鎖) ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(62,39,35,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-content { width: 90%; max-width: 400px; padding: 2.5rem 2rem; text-align: center; }
+.modal-input { width: 100%; padding: 1rem; border-radius: 12px; border: 3px solid var(--ink); font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem; outline: none; font-family: 'DM Mono', monospace; box-shadow: inset 2px 2px 0px rgba(0,0,0,0.05); }
+
+footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9rem; font-weight: 900; border-top: 4px solid var(--ink); background: var(--surface); margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<div id="mode-selector" class="mode-selector">
+  <div style="text-align: center; max-width: 800px; padding-bottom: 1rem;">
+    <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="Sonay Rolla Moggi" style="width: 140px; height: 140px; border-radius: 50%; border: 5px solid var(--ink); box-shadow: var(--shadow-md); margin-bottom: 1.5rem; background: var(--surface); object-fit: cover;">
+    
+    <h2 style="font-size: 1.3rem; font-weight: 900; color: var(--text); background: var(--sun); padding: 0.4rem 1.5rem; border: 3px solid var(--ink); border-radius: 12px; display: inline-block; margin-bottom: 1rem; box-shadow: var(--shadow-sm); transform: rotate(-1deg);">
+      國立臺灣師範大學 — 台北原住民語言學習中心
+    </h2>
+    
+    <h1 style="font-size: clamp(3rem, 8vw, 4.5rem); line-height: 1.2;">阿美語基礎班</h1>
+    
+    <p style="font-size: 1.3rem; padding: 0.6rem 2rem; margin-top: 0.5rem;">
+      👩🏽‍🏫 授課教師：蘿拉麻吉 Sonay Rolla Moggi
+    </p>
+  </div>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="openPwdModal()">
+      <div class="icon">
+        <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="老師LOGO" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); box-shadow: 2px 2px 0px var(--ink); object-fit: cover; background: var(--surface);">
+      </div>
+      <h3>老師頭目</h3>
+      <p>統一派發指令與計時</p>
+    </div>
+    <div class="mode-card" onclick="enterMode('student')">
+      <div class="icon">👦🏽</div>
+      <h3>部落學生 (同步)</h3>
+      <p>接收指令・自動倒數</p>
+    </div>
+    <div class="mode-card" onclick="enterMode('async')">
+      <div class="icon">📱</div>
+      <h3>自己測驗 (補考)</h3>
+      <p>手動控制各階段時間</p>
+    </div>
+  </div>
+</div>
+
+<header id="app-header" class="hidden">
+  <div class="header-left">
+    <h1>阿美族語基礎班 考試系統</h1>
+    <p>Sonay Rolla Moggi · 2026</p>
+  </div>
+  <div style="display:flex;gap:0.75rem;align-items:center;">
+    <span id="mode-badge" class="mode-badge"></span>
+    <button class="back-btn btn-style" onclick="goBack()">← 回首頁</button>
+  </div>
+</header>
+
+<div class="mode-wrapper" id="mode-wrapper">
+
+  <div id="teacher-mode" class="hidden">
+  <main>
+    <div class="sec-title"><span class="sec-num">01. CONSOLE</span><h2>老師控制台</h2><div class="line"></div></div>
+    <div class="teacher-panel cartoon-panel">
+      <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="Teacher Logo" class="panel-logo">
+      <h3>發送同步考試指令</h3>
+      
+      <!-- Task 1 獨立控制區與音檔 -->
+      <div style="background: var(--bg); padding: 1rem; border-radius: 16px; border: 3px solid var(--ink); margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 0.8rem; color: var(--text); font-weight: 900; font-size: 1.1rem;">📝 Task 1 朗讀</h4>
+        <div class="task-btns" style="margin-bottom: 0.8rem;">
+          <button class="task-start-btn btn-style" style="background:var(--sun); color:var(--ink);" onclick="teacherStartWithDelay('task1', 120, 0, 6, 'teacher-audio-intro')">▶ 準備時間 (2分鐘)</button>
+          <button class="task-start-btn btn-style" style="background:var(--na); color:#fff;" onclick="teacherStartWithDelay('task1', 0, 90, 6, 'teacher-audio-intro-ans')">▶ 作答時間 (1分半)</button>
+        </div>
+        <div style="font-size:0.9rem; font-weight:700; color:var(--text2); margin-bottom:0.3rem;">🔊 準備說明音檔 (手動試聽)：</div>
+        <audio id="teacher-audio-intro" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+          <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778337250/voice_260717_occ8bc.mp4" type="audio/mp4">
+        </audio>
+        <div style="font-size:0.9rem; font-weight:700; color:var(--text2); margin-top:0.5rem; margin-bottom:0.3rem;">🔊 作答說明音檔 (手動試聽)：</div>
+        <audio id="teacher-audio-intro-ans" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+          <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778342420/voice_260762_mgbisy.mp4" type="audio/mp4">
+        </audio>
+      </div>
+
+      <!-- Task 2 區塊 -->
+      <div style="background: var(--bg); padding: 1rem; border-radius: 16px; border: 3px solid var(--ink); margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 0.8rem; color: var(--text); font-weight: 900; font-size: 1.1rem;">🎨 Task 2 看圖造句</h4>
+        <div class="task-btns" style="margin-bottom: 0.8rem;">
+          <button class="task-start-btn btn-style" style="background:var(--sun); color:var(--ink);" onclick="teacherStartWithDelay('task2', 120, 120, 6, 'teacher-audio-intro-task2')">▶ 準備時間 (2分鐘)</button>
+          <button class="task-start-btn btn-style" style="background:var(--na); color:#fff;" onclick="teacherStartWithDelay('task2', 0, 90, 6, 'teacher-audio-intro-ans-task2')">▶ 作答時間 (1分半)</button>
+        </div>
+        <div style="font-size:0.9rem; font-weight:700; color:var(--text2); margin-bottom:0.3rem;">🔊 準備說明音檔 (請更換為 Task2 音檔)：</div>
+        <audio id="teacher-audio-intro-task2" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+          <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778337250/voice_260717_occ8bc.mp4" type="audio/mp4">
+        </audio>
+        <div style="font-size:0.9rem; font-weight:700; color:var(--text2); margin-top:0.5rem; margin-bottom:0.3rem;">🔊 作答說明音檔 (請更換為 Task2 音檔)：</div>
+        <audio id="teacher-audio-intro-ans-task2" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+          <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778342420/voice_260762_mgbisy.mp4" type="audio/mp4">
+        </audio>
+      </div>
+
+      <!-- 系統控制 -->
+      <div class="task-btns" style="border-top: 3px dashed var(--ink); padding-top: 1.5rem;">
+        <button class="task-start-btn danger btn-style" onclick="teacherReset()">■ 重置考場</button>
+        <button class="task-start-btn btn-style" style="background:var(--surface); color:var(--ink); border:3px solid var(--ink);" onclick="toggleSplitView()">👀 雙視窗看學生</button>
+      </div>
+      <div class="teacher-status" id="teacher-status" style="margin-top: 1.5rem;">
+        <span class="status-dot" id="teacher-dot"></span>
+        <span id="teacher-status-text">系統待命中，頭目請發號施令！</span>
+      </div>
+    </div>
+
+    <!-- 考前說明區塊 (老師也可播放廣播) -->
+    <div class="sec-title" style="margin-top:4rem;"><span class="sec-num">ATTENTION</span><h2>考前說明音檔</h2><div class="line"></div></div>
+    <div class="task-block" style="padding: 1.5rem; background: var(--surface);">
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="font-size: 3rem; background: var(--bg); border: 3px solid var(--ink); border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">👩🏽‍🏫</div>
+        <div style="flex: 1;">
+          <h3 style="font-size: 1.2rem; font-weight: 900; color: var(--text); margin-bottom: 0.5rem; text-shadow: 1px 1px 0px var(--sun);">老師的叮嚀 (現場廣播用)</h3>
+          <p style="font-size: 1rem; font-weight: 700; color: var(--text2); line-height: 1.6;">「期中考測驗共分為兩部分，第一部分為口說測驗，請同學依照指示看清楚和聽清楚考題...」</p>
+        </div>
+      </div>
+      <audio controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--sun);">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778323643/voice_260680_q4hnet.mp4">
+        您的瀏覽器不支援音檔播放。
+      </audio>
+    </div>
+
+    <div class="sec-title" style="margin-top:4rem;"><span class="sec-num">02. ROSTER</span><h2>部落學生名單</h2><div class="line"></div></div>
+    <div class="dialect-nav">
+      <button class="dtab active btn-style" data-d="ALL" onclick="filterStudents('ALL')">全部</button>
+      <button class="dtab btn-style" data-d="MA" onclick="filterStudents('MA')">馬蘭</button>
+      <button class="dtab btn-style" data-d="NA" onclick="filterStudents('NA')">南勢</button>
+      <button class="dtab btn-style" data-d="SA" onclick="filterStudents('SA')">秀姑巒</button>
+      <button class="dtab btn-style" data-d="HA" onclick="filterStudents('HA')">海岸</button>
+    </div>
+    <div class="student-grid" id="teacher-student-list"></div>
+  </main>
+  </div>
+
+  <div id="student-mode" class="hidden">
+  <main>
+    <div class="sync-timer-wrap cartoon-panel" id="sync-wrap">
+      <div class="waiting-msg" id="sync-waiting">
+        <div style="font-size:3rem;margin-bottom:1rem;">👀</div>
+        等待老師發送考試指令<br><span style="font-size:0.9rem;opacity:0.8;">請別亂跑，測驗即將開始！</span>
+      </div>
+      <div id="sync-active" class="hidden">
+        <div class="phase-label" id="sync-phase-label">準備時間</div>
+        <div class="big-timer" id="sync-timer-display">02分00秒</div>
+        <div class="phase-desc" id="sync-phase-desc">請看題目準備作答</div>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="sync-progress" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="sec-title"><span class="sec-num">STUDENT</span><h2>我是阿美我最美，請選擇自己的方言別做答喔</h2><div class="line"></div></div>
+    <div class="dialect-nav">
+      <button class="dtab active btn-style" data-d="ALL" onclick="filterStudents2('ALL')">全班</button>
+      <button class="dtab btn-style" data-d="MA" onclick="filterStudents2('MA')">馬蘭</button>
+      <button class="dtab btn-style" data-d="NA" onclick="filterStudents2('NA')">南勢</button>
+      <button class="dtab btn-style" data-d="SA" onclick="filterStudents2('SA')">秀姑巒</button>
+      <button class="dtab btn-style" data-d="HA" onclick="filterStudents2('HA')">海岸</button>
+    </div>
+    <div class="student-grid" id="student-list" style="margin-bottom:3rem;"></div>
+
+    <!-- 考前說明區塊 -->
+    <div class="sec-title"><span class="sec-num">ATTENTION</span><h2>考前說明</h2><div class="line"></div></div>
+    <div class="task-block" style="padding: 1.5rem; background: var(--surface);">
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="font-size: 3rem; background: var(--bg); border: 3px solid var(--ink); border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">👩🏽‍🏫</div>
+        <div style="flex: 1;">
+          <h3 style="font-size: 1.2rem; font-weight: 900; color: var(--text); margin-bottom: 0.5rem; text-shadow: 1px 1px 0px var(--sun);">老師的叮嚀</h3>
+          <p style="font-size: 1rem; font-weight: 700; color: var(--text2); line-height: 1.6;">「期中考測驗共分為兩部分，第一部分為口說測驗，請同學依照指示看清楚和聽清楚考題，並透過麥克風用適量的音量錄下每一題的答案後上傳到Google表單。」</p>
+        </div>
+      </div>
+      <audio id="student-audio-intro" controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--sun);">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778323643/voice_260680_q4hnet.mp4">
+        您的瀏覽器不支援音檔播放。
+      </audio>
+      <audio id="student-audio-intro-ans" controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--na); margin-top: 1rem; display: none;">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778342420/voice_260762_mgbisy.mp4">
+      </audio>
+      <!-- Task 2 專用音檔 (隱藏，請在此更換 src) -->
+      <audio id="student-audio-intro-task2" style="display: none;">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778337250/voice_260717_occ8bc.mp4">
+      </audio>
+      <audio id="student-audio-intro-ans-task2" style="display: none;">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778342420/voice_260762_mgbisy.mp4">
+      </audio>
+    </div>
+    <div class="sep"></div>
+
+    <div id="sync-task1">
+      <div class="sec-title"><span class="sec-num">TASK 01</span><h2>朗讀考題</h2><div class="line"></div></div>
+      <div class="dialect-nav" id="reading-dialect-nav">
+        <button class="dtab active btn-style" data-d="MA" onclick="setReadingDialect('MA')">馬蘭</button>
+        <button class="dtab btn-style" data-d="NA" onclick="setReadingDialect('NA')">南勢</button>
+        <button class="dtab btn-style" data-d="SA" onclick="setReadingDialect('SA')">秀姑巒</button>
+        <button class="dtab btn-style" data-d="HA" onclick="setReadingDialect('HA')">海岸</button>
+      </div>
+      <div class="task-block">
+        <div class="task-header"><h3 id="reading-title-sync">馬蘭阿美語 朗讀</h3><span class="task-tag">READING</span></div>
+        <div class="exam-image-wrap"><img class="exam-image" id="reading-img-sync" src="" alt="朗讀考題"></div>
+        <div class="rec-section">
+          <span class="rec-label">錄製音檔</span>
+          <button class="rec-btn btn-style" id="rec-r1-btn" onclick="toggleRec('r1')"><span class="rec-dot"></span> 開始錄音</button>
+          <button class="rec-btn btn-style" id="rec-r1-stop" onclick="stopRec('r1')" style="display:none;background:var(--bg);color:var(--text);">■ 停止</button>
+          <a class="dl-btn btn-style" id="dl-r1">下載 .webm</a>
+          <audio id="audio-r1" class="playback-audio" controls style="display:none;"></audio>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div id="sync-task2">
+      <div class="sec-title"><span class="sec-num">TASK 02</span><h2>看圖造句</h2><div class="line"></div></div>
+      <div id="story-section-sync"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- 新增：TASK 03 線上測驗區塊 -->
+    <div id="sync-task3">
+      <div class="sec-title"><span class="sec-num">TASK 03</span><h2>線上遊戲測驗 (Quizizz)</h2><div class="line"></div></div>
+      <div class="task-block" style="padding: 3rem 1.5rem; text-align: center; background: var(--surface);">
+         <div style="font-size: 5rem; margin-bottom: 1rem;">🕹️</div>
+         <h3 id="sync-quizizz-title" style="font-size: 1.6rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--text);">數字篇：馬蘭阿美語</h3>
+         <p style="margin-bottom: 2.5rem; color: var(--text2); font-weight: 700; font-size: 1.1rem;">點擊下方按鈕前往 Quizizz 進行第二項遊戲測驗！</p>
+         <a id="sync-quizizz-link" href="https://wayground.com/join?gc=43940433" target="_blank" rel="noopener noreferrer" class="btn-style" style="display: inline-block; padding: 1.2rem 3rem; border-radius: 50px; background: var(--ma); color: #fff; font-size: 1.3rem; font-weight: 900; border: 4px solid var(--ink); box-shadow: var(--shadow-md); text-decoration: none;">🚀 進入 Quizizz 考場</a>
+      </div>
+    </div>
+
+    <div class="upload-strip">
+      <div><p><strong>📤 測驗完成啦！</strong></p><p>請確認已下載錄音檔，並傳到指定表單。</p></div>
+      <a href="https://forms.gle/zvU8jP23r6tFnTt1A" target="_blank" rel="noopener noreferrer" class="upload-btn btn-style" id="upload-btn-sync">前往上傳 →</a>
+    </div>
+  </main>
+  </div>
+
+  <div id="async-mode" class="hidden">
+  <main>
+    <div class="sec-title"><span class="sec-num">ASYNC</span><h2>自主作答模式</h2><div class="line"></div></div>
+    <p style="color:var(--text);margin-bottom:2.5rem;font-size:1.1rem;font-weight:700;">由學生自行控制時間，補考或網路不穩時專用。</p>
+
+    <div class="local-timers">
+      <div class="ltimer-card">
+        <div class="ltimer-num">PHASE 1</div>
+        <div class="ltimer-disp" id="lt1">02分00秒</div>
+        <div class="ltimer-label">準備時間 (PREP)</div>
+        <button class="ltimer-btn btn-style" id="lt1-btn" onclick="toggleLTimer(1)">開始計時</button>
+      </div>
+      <div class="ltimer-card">
+        <div class="ltimer-num">PHASE 2</div>
+        <div class="ltimer-disp" id="lt2">02分00秒</div>
+        <div class="ltimer-label">作答時間 (ANSWER)</div>
+        <button class="ltimer-btn btn-style" id="lt2-btn" onclick="toggleLTimer(2)">開始計時</button>
+      </div>
+    </div>
+
+    <div class="sec-title"><span class="sec-num">ROSTER</span><h2>選擇語系</h2><div class="line"></div></div>
+    <div class="dialect-nav">
+      <button class="dtab active btn-style" data-d="ALL" onclick="filterStudents3('ALL')">全班</button>
+      <button class="dtab btn-style" data-d="MA" onclick="filterStudents3('MA')">馬蘭</button>
+      <button class="dtab btn-style" data-d="NA" onclick="filterStudents3('NA')">南勢</button>
+      <button class="dtab btn-style" data-d="SA" onclick="filterStudents3('SA')">秀姑巒</button>
+      <button class="dtab btn-style" data-d="HA" onclick="filterStudents3('HA')">海岸</button>
+    </div>
+    <div class="student-grid" id="async-student-list" style="margin-bottom:3rem;"></div>
+
+    <!-- 考前說明區塊 -->
+    <div class="sec-title"><span class="sec-num">ATTENTION</span><h2>考前說明</h2><div class="line"></div></div>
+    <div class="task-block" style="padding: 1.5rem; background: var(--surface);">
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="font-size: 3rem; background: var(--bg); border: 3px solid var(--ink); border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">👩🏽‍🏫</div>
+        <div style="flex: 1;">
+          <h3 style="font-size: 1.2rem; font-weight: 900; color: var(--text); margin-bottom: 0.5rem; text-shadow: 1px 1px 0px var(--sun);">老師的叮嚀</h3>
+          <p style="font-size: 1rem; font-weight: 700; color: var(--text2); line-height: 1.6;">「期中考測驗共分為兩部分，第一部分為口說測驗，請同學依照指示看清楚和聽清楚考題，並透過麥克風用適量的音量錄下每一題的答案後上傳到Google表單。」</p>
+        </div>
+      </div>
+      <audio controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--sun);">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778323643/voice_260680_q4hnet.mp4">
+        您的瀏覽器不支援音檔播放。
+      </audio>
+    </div>
+    <div class="sep"></div>
+
+    <div class="sec-title"><span class="sec-num">TASK 01</span><h2>朗讀考題</h2><div class="line"></div></div>
+    <div class="dialect-nav">
+      <button class="dtab active btn-style" data-d="MA" onclick="setAsyncDialect('MA')">馬蘭</button>
+      <button class="dtab btn-style" data-d="NA" onclick="setAsyncDialect('NA')">南勢</button>
+      <button class="dtab btn-style" data-d="SA" onclick="setAsyncDialect('SA')">秀姑巒</button>
+      <button class="dtab btn-style" data-d="HA" onclick="setAsyncDialect('HA')">海岸</button>
+    </div>
+    <div class="task-block">
+      <div class="task-header"><h3 id="async-reading-title">馬蘭阿美語 朗讀</h3><span class="task-tag">READING</span></div>
+      <div class="exam-image-wrap"><img class="exam-image" id="async-reading-img" src="" alt="朗讀考題"></div>
+      <div class="rec-section">
+        <span class="rec-label">錄製音檔</span>
+        <button class="rec-btn btn-style" id="rec-a1-btn" onclick="toggleRec('a1')"><span class="rec-dot"></span> 開始錄音</button>
+        <button class="rec-btn btn-style" id="rec-a1-stop" onclick="stopRec('a1')" style="display:none;background:var(--bg);color:var(--text);">■ 停止</button>
+        <a class="dl-btn btn-style" id="dl-a1">下載 .webm</a>
+        <audio id="audio-a1" class="playback-audio" controls style="display:none;"></audio>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="sec-title"><span class="sec-num">TASK 02</span><h2>看圖造句</h2><div class="line"></div></div>
+    <div id="story-section-async"></div>
+
+    <div class="sep"></div>
+
+    <!-- 新增：TASK 03 線上測驗區塊 (自主補考模式也同步加上) -->
+    <div id="async-task3">
+      <div class="sec-title"><span class="sec-num">TASK 03</span><h2>線上遊戲測驗 (Quizizz)</h2><div class="line"></div></div>
+      <div class="task-block" style="padding: 3rem 1.5rem; text-align: center; background: var(--surface);">
+         <div style="font-size: 5rem; margin-bottom: 1rem;">🕹️</div>
+         <h3 id="async-quizizz-title" style="font-size: 1.6rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--text);">數字篇：馬蘭阿美語</h3>
+         <p style="margin-bottom: 2.5rem; color: var(--text2); font-weight: 700; font-size: 1.1rem;">點擊下方按鈕前往 Quizizz 進行第二項遊戲測驗！</p>
+         <a id="async-quizizz-link" href="https://wayground.com/join?gc=43940433" target="_blank" rel="noopener noreferrer" class="btn-style" style="display: inline-block; padding: 1.2rem 3rem; border-radius: 50px; background: var(--ma); color: #fff; font-size: 1.3rem; font-weight: 900; border: 4px solid var(--ink); box-shadow: var(--shadow-md); text-decoration: none;">🚀 進入 Quizizz 考場</a>
+      </div>
+    </div>
+
+    <div class="upload-strip">
+      <div><p><strong>📤 測驗完成啦！</strong></p><p>請確認已下載錄音檔，並傳到指定表單。</p></div>
+      <a href="https://forms.gle/zvU8jP23r6tFnTt1A" target="_blank" rel="noopener noreferrer" class="upload-btn btn-style">前往上傳 →</a>
+    </div>
+  </main>
+  </div>
+
+</div> <!-- end of mode-wrapper -->
+
+<!-- 老師密碼鎖 Modal -->
+<div id="pwd-modal" class="modal-overlay hidden">
+  <div class="cartoon-panel modal-content">
+    <h3 style="font-size: 1.5rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--text);">🔒 頭目專屬區域</h3>
+    <p style="margin-bottom: 1.5rem; color: var(--text2); font-weight: 700;">請輸入密碼進入控制台</p>
+    <input type="password" id="teacher-pwd-input" class="modal-input" placeholder="****" onkeypress="if(event.key==='Enter') verifyTeacherPwd()">
+    <div style="display: flex; gap: 1rem;">
+      <button class="btn-style" style="flex: 1; padding: 0.8rem; background: var(--surface); color: var(--text); border: 3px solid var(--ink); border-radius: 12px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-sm);" onclick="closePwdModal()">取消</button>
+      <button class="btn-style" style="flex: 1; padding: 0.8rem; background: var(--primary); color: #fff; border: 3px solid var(--ink); border-radius: 12px; font-weight: 900; cursor: pointer; box-shadow: var(--shadow-sm);" onclick="verifyTeacherPwd()">登入</button>
+    </div>
+    <div id="pwd-error" style="color: var(--danger); font-weight: 900; margin-top: 1rem; display: none; background: #ffebeb; padding: 0.5rem; border-radius: 8px; border: 2px solid var(--danger);">❌ 密碼錯誤！</div>
+  </div>
+</div>
+
+<footer>臺師大 阿美族語基礎班 · 族語認證評量系統 · 2026</footer>
+
+<script>
+let wakeLock = null;
+async function requestWakeLock() {
+  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(err){}
+}
+
+const STUDENTS = [
+  { name:'顏語瑄', d:'SA' }, { name:'李晨駿', d:'SA' }, { name:'張品詰', d:'SA' },
+  { name:'曾旻葳', d:'SA' }, { name:'王千伃', d:'SA' }, { name:'楊鈞凱', d:'SA' },
+  { name:'吳詩潔', d:'HA' }, { name:'王巧妃', d:'HA' }, { name:'李坪烜', d:'HA' },
+  { name:'李宸宇', d:'HA' }, { name:'林貴美', d:'HA' }, { name:'楊莉雯', d:'HA' },
+  { name:'李和惠', d:'HA' }, { name:'游秀英', d:'HA' },
+  { name:'姜呈穎', d:'MA' }, { name:'陽書恆', d:'MA' }, { name:'楊睿峿', d:'MA' },
+  { name:'楊曼汝', d:'NA' }, { name:'蘇嘉慧', d:'NA' },
+];
+
+const DIALECTS = {
+  MA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778311188/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_151801_uphzpb.png', title:'馬蘭阿美語 朗讀', color: 'var(--ma)', quizTitle: '數字篇：馬蘭阿美語', quizLink: 'https://wayground.com/join?gc=43940433' },
+  NA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778310923/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_151311_uj6hks.png', title:'南勢阿美語 朗讀', color: 'var(--na)', quizTitle: '數字篇：南勢阿美語', quizLink: 'https://wayground.com/join?gc=28146257' },
+  SA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778310515/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_134018_m65bpu.png', title:'秀姑巒阿美語 朗讀', color: 'var(--sa)', quizTitle: '數字篇：秀姑巒阿美語', quizLink: 'https://wayground.com/join?gc=58292817' },
+  HA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778311383/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_152203_pqtmwn.png', title:'海岸阿美語 朗讀', color: 'var(--ha)', quizTitle: '數字篇：海岸阿美語', quizLink: 'https://wayground.com/join?gc=請替換海岸代碼' },
+};
+
+const STORY_TASKS = [
+  { id:'A', label:'A：數字與代名詞', img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778339892/%E6%88%91%E6%9C%89%E4%B8%89%E9%A1%86%E7%90%83_vyrawz.png', vocab:[
+    {z:'1', MA:'cecay', NA:'cacay', SA:'cecay', HA:'cecay'},
+    {z:'10', MA:'moetep', NA:"pulu' / muketep", SA:"polo' / mo^tep", HA:"polo' / mo'etep"},
+    {z:'我(主格)', MA:'kako', NA:'kaku', SA:'kako', HA:'kako'},
+    {z:'我的(屬格)', MA:'no mako', NA:'nu maku', SA:'no mako', HA:'no mako'},
+    {z:'你(主格)', MA:'kiso', NA:'kisu', SA:'kiso', HA:'kiso'}
+  ] },
+  { id:'B', label:'B：親屬與人物', vocab:[
+    {z:'母親', MA:'wina', NA:'ina / wina', SA:'ina', HA:'ina / wina'},
+    {z:'父親', MA:'wama', NA:'ama / wama', SA:'mama', HA:'mama'},
+    {z:'兄/姐', MA:'kaka', NA:'kaka', SA:'kaka', HA:'kaka'},
+    {z:'弟/妹', MA:'safa', NA:'sava', SA:'safa', HA:'safa'},
+    {z:'叔叔', MA:'faki', NA:'vaki', SA:'faki', HA:'faki'},
+    {z:'阿姨', MA:'fayi', NA:'vayi', SA:'fayi', HA:'fayi'},
+    {z:'老師', MA:'singsi', NA:'pasevanaay', SA:'singsi', HA:'singsi'},
+    {z:'醫生', MA:'ising', NA:'ising', SA:'ising', HA:'ising'},
+    {z:'男性', MA:'fainayan', NA:'vavainaya', SA:"fa'inayan", HA:"fa'inayan"},
+    {z:'女性', MA:'fafahiyan', NA:'vavahiyan', SA:'fafahiyan', HA:'fafahiyan'}
+  ] },
+  { id:'C', label:'C：身體部位', vocab:[
+    {z:'頭', MA:'fongoh', NA:'tangal', SA:'tangal', HA:'fongoh'},
+    {z:'眼睛', MA:'mata', NA:'mata', SA:'mata', HA:'mata'},
+    {z:'嘴巴', MA:'ngoyos', NA:'nguyus', SA:'ngapa', HA:'ngoyos'},
+    {z:'手', MA:'kamay', NA:'kamay', SA:'kamay', HA:'kamay'},
+    {z:'腳', MA:"oo'", NA:"kuku'", SA:"wa'ay", HA:"wa'ay"}
+  ] },
+  { id:'D', label:'D：動物與物品', vocab:[
+    {z:'山豬', MA:'fafoy', NA:'vavuy', SA:'fafoy', HA:'fafoy'},
+    {z:'狗', MA:'waco', NA:'wacu', SA:'waco', HA:'waco'},
+    {z:'貓', MA:'posi', NA:"nani'", SA:'posi', HA:'posi'},
+    {z:'魚', MA:'foting', NA:'futing', SA:'foting', HA:'foting'},
+    {z:'鳥', MA:'ayam', NA:'ayam', SA:"koko' / 'ayam", HA:'ayam'},
+    {z:'球', MA:'mali', NA:'mali', SA:'mali', HA:'mali'},
+    {z:'電話', MA:'tingwa', NA:'telay', SA:'tingwa', HA:'tingwa'},
+    {z:'錢', MA:'payso', NA:'pida', SA:'pida / payso', HA:'payso'}
+  ] },
+  { id:'E', label:'E：植物與食物', vocab:[
+    {z:'芋頭', MA:'tali', NA:'tali', SA:'tali', HA:'tali'},
+    {z:'香蕉', MA:'pawli', NA:'pawli', SA:'pawli', HA:'pawli'},
+    {z:'橘子', MA:'asiro', NA:'kama', SA:"mami'", HA:"mami'"}
+  ] },
+];
+
+let currentMode = null;
+let isSplitActive = false;
+
+// 新增：密碼鎖控制邏輯
+function openPwdModal() {
+  document.getElementById('pwd-modal').classList.remove('hidden');
+  document.getElementById('teacher-pwd-input').value = '';
+  document.getElementById('pwd-error').style.display = 'none';
+  setTimeout(() => document.getElementById('teacher-pwd-input').focus(), 100);
+}
+function closePwdModal() { document.getElementById('pwd-modal').classList.add('hidden'); }
+function verifyTeacherPwd() {
+  const pwd = document.getElementById('teacher-pwd-input').value;
+  if (pwd === '0901') { // 這裡設定密碼
+    closePwdModal();
+    enterMode('teacher');
+  } else {
+    document.getElementById('pwd-error').style.display = 'block';
+    document.getElementById('teacher-pwd-input').value = '';
+    document.getElementById('teacher-pwd-input').focus();
+  }
+}
+
+function enterMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-selector').classList.add('hidden');
+  document.getElementById('app-header').classList.remove('hidden');
+
+  const badge = document.getElementById('mode-badge');
+  if (mode === 'teacher') {
+    badge.textContent = '頭目 CONSOLE'; badge.className = 'mode-badge teacher';
+    document.getElementById('teacher-mode').classList.remove('hidden');
+    renderStudents('teacher-student-list', 'ALL');
+  } else if (mode === 'student') {
+    requestWakeLock();
+    badge.textContent = '部落同步 SYNC'; badge.className = 'mode-badge student';
+    document.getElementById('student-mode').classList.remove('hidden');
+    renderStudents('student-list', 'ALL');
+    renderStorySection('story-section-sync', 'sync');
+    setReadingDialect('MA'); startListening();
+  } else {
+    requestWakeLock();
+    badge.textContent = '自己測驗 ASYNC'; badge.className = 'mode-badge async';
+    document.getElementById('async-mode').classList.remove('hidden');
+    renderStudents('async-student-list', 'ALL');
+    renderStorySection('story-section-async', 'async');
+    setAsyncDialect('MA');
+  }
+}
+
+function goBack() {
+  document.getElementById('mode-selector').classList.remove('hidden');
+  document.getElementById('app-header').classList.add('hidden');
+  ['teacher-mode','student-mode','async-mode'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  resetSyncTimer();
+  
+  // 重置雙視窗模式
+  isSplitActive = false;
+  const wrapper = document.getElementById('mode-wrapper');
+  if (wrapper) wrapper.classList.remove('split-active');
+}
+
+// 切換雙視窗功能
+window.toggleSplitView = () => {
+  isSplitActive = !isSplitActive;
+  const sMode = document.getElementById('student-mode');
+  const wrapper = document.getElementById('mode-wrapper');
+  
+  if (isSplitActive) {
+    sMode.classList.remove('hidden');
+    wrapper.classList.add('split-active');
+    
+    // 初始化一次學生畫面，方便老師觀看
+    renderStudents('student-list', 'ALL');
+    renderStorySection('story-section-sync', 'sync');
+    setReadingDialect('MA'); 
+    startListening(); 
+  } else {
+    sMode.classList.add('hidden');
+    wrapper.classList.remove('split-active');
+  }
+};
+
+function renderStudents(containerId, filter) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const list = filter === 'ALL' ? STUDENTS : STUDENTS.filter(s => s.d === filter);
+  wrap.innerHTML = list.map(s => `
+    <div class="student-card" data-d="${s.d}" onclick="selectStudent('${s.name}', '${s.d}')">
+      <span class="sname">${s.name}</span><span class="sdialect">${s.d}</span>
+    </div>`).join('');
+}
+
+// 新增：點擊姓名自動派題與畫面捲動 (全模式通用版)
+window.selectStudent = (name, d) => {
+  // 清除其他人的選取狀態，並標記所有同名的卡片（包含雙視窗時的老師端與學生端）
+  document.querySelectorAll('.student-card').forEach(c => {
+    c.classList.remove('selected');
+    if (c.querySelector('.sname').textContent === name) {
+      c.classList.add('selected');
+    }
+  });
+  
+  // 不論在哪個模式，都直接切換好所有考題語言別
+  setReadingDialect(d);
+  setAsyncDialect(d);
+
+  // 根據目前畫面上顯示的區塊，自動捲動到對應的考題
+  const studentMode = document.getElementById('student-mode');
+  const asyncMode = document.getElementById('async-mode');
+  
+  if (!studentMode.classList.contains('hidden')) {
+    document.getElementById('sync-task1').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (!asyncMode.classList.contains('hidden')) {
+    document.getElementById('async-reading-img').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
+
+function updateTabs(selector, val) {
+  document.querySelectorAll(selector).forEach(b => b.classList.toggle('active', b.dataset.d === val));
+}
+window.filterStudents = d => { updateTabs('#teacher-mode .dialect-nav:nth-of-type(1) .dtab', d); renderStudents('teacher-student-list', d); }
+window.filterStudents2 = d => { updateTabs('#student-mode .dialect-nav:nth-of-type(1) .dtab', d); renderStudents('student-list', d); }
+window.filterStudents3 = d => { updateTabs('#async-mode .dialect-nav:nth-of-type(1) .dtab', d); renderStudents('async-student-list', d); }
+
+function renderStorySection(containerId, prefix) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const tabs = `<div class="dialect-nav" style="margin-bottom:1rem;">` + STORY_TASKS.map((t,i) =>
+    `<button class="dtab btn-style${i===0?' active':''}" onclick="showStory('${prefix}','${t.id}')">${t.label}</button>`
+  ).join('') + `</div>`;
+
+  const panels = STORY_TASKS.map((t,i) => `
+    <div class="story-panel${i===0?' active':''}" id="${prefix}-panel-${t.id}">
+      <div class="task-block">
+        <div class="task-header"><h3>${t.label}</h3><span class="task-tag">PICTURE TASK</span></div>
+        <div class="exam-image-wrap">
+          ${t.img ? `<img class="exam-image" src="${t.img}" alt="${t.label}">` : `
+          <div style="text-align:center;color:var(--text);padding:3rem;">
+            <div style="font-size:5rem;margin-bottom:1rem;">🎨</div>
+            <div style="font-size:1.5rem;font-weight:900;">繪本準備中</div>
+          </div>`}
+        </div>
+        <div class="vocab-hint"><span class="vocab-label">提示詞彙</span>${t.vocab.map(v=>`<span class="vpill"><span class="vword" data-ma="${v.MA}" data-na="${v.NA}" data-sa="${v.SA}" data-ha="${v.HA}">${v.MA}</span><span class="zh">${v.z}</span></span>`).join('')}</div>
+        <div class="rec-section">
+          <span class="rec-label">錄製音檔</span>
+          <button class="rec-btn btn-style" id="rec-${prefix}${t.id}-btn" onclick="toggleRec('${prefix}${t.id}')"><span class="rec-dot"></span> 開始錄音</button>
+          <button class="rec-btn btn-style" id="rec-${prefix}${t.id}-stop" onclick="stopRec('${prefix}${t.id}')" style="display:none;background:var(--bg);color:var(--text);">■ 停止</button>
+          <a class="dl-btn btn-style" id="dl-${prefix}${t.id}">下載 .webm</a>
+          <audio id="audio-${prefix}${t.id}" class="playback-audio" controls style="display:none;"></audio>
+        </div>
+      </div>
+    </div>`).join('');
+  wrap.innerHTML = tabs + panels;
+}
+
+window.showStory = (prefix, id) => {
+  STORY_TASKS.forEach(t => document.getElementById(`${prefix}-panel-${t.id}`)?.classList.toggle('active', t.id === id));
+  updateTabs(`#${prefix === 'sync' ? 'story-section-sync' : 'story-section-async'} .dtab`, id);
+};
+
+window.setReadingDialect = d => {
+  updateTabs('#reading-dialect-nav .dtab', d);
+  document.getElementById('reading-title-sync').textContent = DIALECTS[d].title;
+  document.getElementById('reading-img-sync').src = DIALECTS[d].img;
+  
+  // 同步更新 Quizizz 區塊
+  const qTitle = document.getElementById('sync-quizizz-title');
+  const qLink = document.getElementById('sync-quizizz-link');
+  if (qTitle && qLink) {
+    qTitle.textContent = DIALECTS[d].quizTitle;
+    qLink.href = DIALECTS[d].quizLink;
+    qLink.style.background = DIALECTS[d].color;
+  }
+
+  // 同步更新 Task 2 的提示詞彙
+  document.querySelectorAll('#story-section-sync .vword').forEach(el => {
+    el.textContent = el.dataset[d.toLowerCase()];
+  });
+}
+window.setAsyncDialect = d => {
+  updateTabs('#async-mode .dialect-nav:nth-of-type(2) .dtab', d);
+  document.getElementById('async-reading-title').textContent = DIALECTS[d].title;
+  document.getElementById('async-reading-img').src = DIALECTS[d].img;
+  
+  // 同步更新 Quizizz 區塊
+  const qTitle = document.getElementById('async-quizizz-title');
+  const qLink = document.getElementById('async-quizizz-link');
+  if (qTitle && qLink) {
+    qTitle.textContent = DIALECTS[d].quizTitle;
+    qLink.href = DIALECTS[d].quizLink;
+    qLink.style.background = DIALECTS[d].color;
+  }
+
+  // 同步更新 Task 2 的提示詞彙
+  document.querySelectorAll('#story-section-async .vword').forEach(el => {
+    el.textContent = el.dataset[d.toLowerCase()];
+  });
+}
+
+// 新增：絕對穩定版延遲機制 (不再依賴音檔自動播放的 Promise)
+window.teacherStartWithDelay = (task, prepSecs, answerSecs, delaySecs, audioId) => {
+  if (!window.teacherStartExam) return;
+  document.getElementById('teacher-dot').classList.add('live');
+
+  // 1. 嘗試播放畫面上的音檔給老師聽
+  if (audioId) {
+    const audioEl = document.getElementById(audioId);
+    if (audioEl) {
+      audioEl.currentTime = 0;
+      audioEl.play().catch(e => console.warn('老師端音檔播放阻擋:', e));
+    }
+  }
+
+  // 2. 「無條件」將未來時間寫入資料庫，確保全班學生 100% 進入 6 秒等待畫面
+  const now = window.getTrueTime();
+  const delayedStart = now + (delaySecs * 1000); 
+
+  // 透過模組內定義的 teacherStartExam 傳遞自訂起始時間，避免 set is not defined 錯誤
+  window.teacherStartExam(task, prepSecs, answerSecs, delayedStart);
+
+  document.getElementById('teacher-status-text').textContent = `[ ${task.toUpperCase()} ] 播放說明音檔中 (${delaySecs}秒)，結束後自動開始倒數...`;
+
+  setTimeout(() => {
+    document.getElementById('teacher-status-text').textContent = `[ ${task.toUpperCase()} ] 準備時間 ${prepSecs/60} 分鐘倒數中...`;
+  }, delaySecs * 1000);
+};
+
+window.teacherStart = (task, prepSecs = 120, answerSecs = 120) => {
+  if (window.teacherStartExam) {
+    window.teacherStartExam(task, prepSecs, answerSecs);
+    document.getElementById('teacher-dot').classList.add('live');
+    
+    let txt = `[ ${task.toUpperCase()} ] 測驗開始...`;
+    if (prepSecs > 0 && answerSecs === 0) {
+      txt = `[ ${task.toUpperCase()} ] 準備時間 ${prepSecs/60} 分鐘倒數中...`;
+    } else if (prepSecs === 0 && answerSecs > 0) {
+      const m = Math.floor(answerSecs/60);
+      const s = answerSecs % 60;
+      txt = `[ ${task.toUpperCase()} ] 作答時間 ${m > 0 ? m + '分' : ''}${s > 0 ? s + '秒' : ''}倒數中...`;
+    }
+    
+    document.getElementById('teacher-status-text').textContent = txt;
+  }
+}
+window.teacherReset = () => {
+  if (window.teacherResetExam) {
+    window.teacherResetExam();
+    document.getElementById('teacher-dot').classList.remove('live');
+    document.getElementById('teacher-status-text').textContent = '系統待命中，頭目請發號施令！';
+  }
+}
+
+// 確保學生端能正常接收指令
+let examListenerActive = false;
+function startListening() {
+  if (window.listenExam && !examListenerActive) {
+    examListenerActive = true; // 修正：避免開關雙視窗導致重複註冊監聽器
+    window.listenExam(handleExamState);
+  }
+}
+
+// Timer Logic (修復時間誤差與進度條閃爍)
+let syncInterval = null;
+function handleExamState(data) {
+  if (!data || !data.task || data.phase === 'idle') { resetSyncTimer(); return; }
+  if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+  
+  const elapsedMs = window.getTrueTime() - data.startedAt;
+  const elapsed = Math.floor(elapsedMs / 1000);
+  
+  // 修正：將 || 改為 ??，避免 0 秒被誤判為空值而載入預設的 120 秒
+  const prep = data.prepSecs ?? 120;
+  const ans  = data.answerSecs ?? 120;
+  
+  document.getElementById('sync-waiting').classList.add('hidden');
+  document.getElementById('sync-active').classList.remove('hidden');
+
+  // 改用精確的「毫秒 (ms)」來做小於 0 的判斷，徹底避免小數進位產生的無窮迴圈
+  if (elapsedMs < 0) {
+    runIntroPhase(data);
+  } else if (elapsed < prep) {
+    runSyncPhase('prepare', prep - elapsed, ans, prep);
+  } else if (elapsed - prep < ans) {
+    runSyncPhase('answer', ans - (elapsed - prep), 0, ans);
+  } else {
+    updateToEnded();
+  }
+}
+
+function updateToEnded() {
+  if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+  document.getElementById('sync-phase-label').textContent = '時間到';
+  const disp = document.getElementById('sync-timer-display');
+  disp.textContent = '00分00秒';
+  disp.style.fontSize = ''; 
+  document.getElementById('sync-phase-desc').textContent = '測驗結束，請停止錄音。';
+  document.getElementById('sync-progress').style.width = '0%';
+}
+
+// 廣播等候階段 UI (精準倒數)
+function runIntroPhase(data) {
+  if (syncInterval) clearInterval(syncInterval);
+  const endTime = data.startedAt;
+  
+  // 嘗試幫學生端也自動播放廣播音檔（依據準備時間是否為 0 以及任務 ID 判斷播放哪一個）
+  if (currentMode === 'student') {
+    let audioId = '';
+    if (data.task === 'task1') {
+      audioId = (data.prepSecs === 0) ? 'student-audio-intro-ans' : 'student-audio-intro';
+    } else if (data.task === 'task2') {
+      audioId = (data.prepSecs === 0) ? 'student-audio-intro-ans-task2' : 'student-audio-intro-task2';
+    }
+    
+    if (audioId) {
+      const studentAudio = document.getElementById(audioId);
+      if (studentAudio && studentAudio.paused) {
+        studentAudio.currentTime = 0;
+        studentAudio.play().catch(e => console.warn('學生端自動播放阻擋:', e));
+      }
+    }
+  }
+
+  const disp = document.getElementById('sync-timer-display');
+  const bar = document.getElementById('sync-progress');
+  disp.textContent = `請聆聽說明`;
+  disp.style.fontSize = 'clamp(2rem, 8vw, 3.5rem)';
+  disp.className = 'big-timer prepare';
+  bar.style.width = '100%';
+  bar.className = 'progress-bar prepare';
+  
+  document.getElementById('sync-phase-label').textContent = '說明時間 INTRO';
+
+  const tick = () => {
+    const curWaitMs = endTime - window.getTrueTime();
+    const curWait = Math.ceil(curWaitMs / 1000);
+    // 判斷剩餘毫秒數，精準接軌
+    if (curWaitMs <= 0) {
+      if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+      disp.style.fontSize = ''; 
+      handleExamState(data); // 重新進入判斷，無縫切換到作答
+    } else {
+      document.getElementById('sync-phase-desc').textContent = `音檔播放結束後將自動開始倒數... (${curWait}秒)`;
+    }
+  };
+  
+  tick(); 
+  if (syncInterval) clearInterval(syncInterval); 
+  syncInterval = setInterval(tick, 200); // 使用 200ms 更新頻率，切換極度滑順
+}
+
+function runSyncPhase(phase, remaining, nextSecs, totalDuration) {
+  if (syncInterval) clearInterval(syncInterval);
+  const endTime = window.getTrueTime() + (remaining * 1000);
+  updateSyncDisplay(phase, remaining, totalDuration);
+
+  const tick = () => {
+    const curMs = endTime - window.getTrueTime();
+    const cur = Math.max(0, Math.ceil(curMs / 1000));
+    updateSyncDisplay(phase, cur, totalDuration);
+    // 使用毫秒 <= 0 確保結束判定的準確性
+    if (curMs <= 0) {
+      if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+      if (phase === 'prepare' && nextSecs > 0) runSyncPhase('answer', nextSecs, 0, nextSecs);
+      else updateToEnded();
+    }
+  };
+  
+  syncInterval = setInterval(tick, 200);
+}
+
+function updateSyncDisplay(phase, remaining, total) {
+  const disp = document.getElementById('sync-timer-display'), bar = document.getElementById('sync-progress');
+  disp.textContent = `${String(Math.floor(remaining/60)).padStart(2,'0')}分${String(remaining%60).padStart(2,'0')}秒`;
+  
+  const pct = total > 0 ? (remaining / total) * 100 : 0;
+  bar.style.width = Math.max(0, pct) + '%';
+  
+  disp.className = 'big-timer ' + (phase==='prepare'?'prepare':'answer');
+  bar.className = 'progress-bar ' + (phase==='prepare'?'':'answer');
+  document.getElementById('sync-phase-label').textContent = phase==='prepare'?'準備時間':'作答時間';
+  document.getElementById('sync-phase-desc').textContent = phase==='prepare'?'請看題目準備作答':'請開始錄音作答';
+  if (remaining <= 15) { disp.classList.add('urgent'); bar.classList.add('urgent'); }
+}
+
+function resetSyncTimer() {
+  if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+  document.getElementById('sync-waiting').classList.remove('hidden');
+  document.getElementById('sync-active').classList.add('hidden');
+}
+
+const ltState = { 1:null, 2:null }, ltRemaining = { 1:120, 2:120 }, ltEndTimes = { 1:null, 2:null };
+window.toggleLTimer = n => {
+  const btn = document.getElementById('lt'+n+'-btn'), disp = document.getElementById('lt'+n);
+  if (ltState[n]) {
+    clearInterval(ltState[n]); ltState[n] = null; ltEndTimes[n] = null;
+    btn.textContent = '繼續計時'; btn.classList.remove('running'); disp.classList.remove('running'); return;
+  }
+  btn.textContent = '暫停一下'; btn.classList.add('running'); disp.classList.add('running');
+  ltEndTimes[n] = Date.now() + (ltRemaining[n] * 1000);
+  ltState[n] = setInterval(() => {
+    ltRemaining[n] = Math.max(0, Math.ceil((ltEndTimes[n] - Date.now()) / 1000));
+    disp.textContent = `${String(Math.floor(ltRemaining[n]/60)).padStart(2,'0')}分${String(ltRemaining[n]%60).padStart(2,'0')}秒`;
+    if (ltRemaining[n] <= 10) disp.classList.add('urgent');
+    if (ltRemaining[n] <= 0) { clearInterval(ltState[n]); ltState[n] = null; disp.textContent = '00分00秒'; btn.textContent = '時間到'; btn.disabled = true; }
+  }, 1000);
+};
+
+const recState = {};
+window.toggleRec = async id => {
+  if (recState[id] && recState[id].active) { stopRec(id); return; }
+  
+  // 1. 檢查環境支援度 (必須在 HTTPS 下執行)
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('環境不支援錄音，請確認網址開頭是否為 https://');
+    return;
+  }
+
+  try {
+    // 開始新錄音時，隱藏播放器並清除舊音檔
+    const audioEl = document.getElementById('audio-'+id);
+    if (audioEl) { audioEl.style.display = 'none'; audioEl.src = ''; }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // 2. 跨平台相容性陣列偵測 (優先抓 webm，iOS 會掉進 mp4/aac 甚至留空讓瀏覽器自決)
+    const types = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/aac",
+      "audio/ogg"
+    ];
+    let mimeType = '';
+    if (typeof MediaRecorder.isTypeSupported === 'function') {
+      for (const t of types) {
+        if (MediaRecorder.isTypeSupported(t)) {
+          mimeType = t;
+          break;
+        }
+      }
+    }
+
+    const options = mimeType ? { mimeType } : {};
+    const mr = new MediaRecorder(stream, options);
+    const chunks = [];
+    
+    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mr.onstop = () => {
+      // 確定最終副檔名，如果前面都抓不到，預設當作 iOS 給的 mp4
+      const finalMime = mr.mimeType || mimeType || 'audio/mp4';
+      let ext = 'webm';
+      if (finalMime.includes('mp4') || finalMime.includes('aac')) ext = 'mp4';
+      else if (finalMime.includes('ogg')) ext = 'ogg';
+      else if (finalMime.includes('wav')) ext = 'wav';
+
+      const blob = new Blob(chunks, { type: finalMime });
+      const url = URL.createObjectURL(blob);
+      const dl = document.getElementById('dl-'+id);
+      if (dl) { 
+        dl.href = url; 
+        dl.download = `amis_${id}_${Date.now()}.${ext}`; 
+        dl.classList.add('ready'); 
+        dl.textContent = `下載 .${ext}`; 
+      }
+      // 停止錄音後，顯示播放器並載入音檔
+      if (audioEl) {
+        audioEl.src = url;
+        audioEl.style.display = 'block';
+      }
+      stream.getTracks().forEach(t => t.stop());
+    };
+    
+    // 3. 🚨 關鍵修復：拔掉 timeslice 參數，讓 iOS Safari 一次性輸出完整檔案避免毀損
+    mr.start(); 
+    recState[id] = { recorder: mr, active: true };
+    document.getElementById('rec-'+id+'-btn').classList.add('recording');
+    document.getElementById('rec-'+id+'-btn').innerHTML = '<span class="rec-dot"></span> 錄音中...';
+    document.getElementById('rec-'+id+'-stop').style.display = 'inline-flex';
+  } catch(e) { 
+    console.error(e);
+    alert(`錄音失敗 (${e.name}): ${e.message}\n請確認已允許麥克風，並建議使用 Safari/Chrome 原生瀏覽器，不要用 LINE 開啟。`); 
+  }
+};
+
+window.stopRec = id => {
+  if (recState[id] && recState[id].active) {
+    recState[id].recorder.stop(); recState[id].active = false;
+    document.getElementById('rec-'+id+'-btn').classList.remove('recording');
+    document.getElementById('rec-'+id+'-btn').innerHTML = '<span class="rec-dot"></span> 重新錄音';
+    document.getElementById('rec-'+id+'-stop').style.display = 'none';
+  }
+};
+</script>
+</body>
+</html>
