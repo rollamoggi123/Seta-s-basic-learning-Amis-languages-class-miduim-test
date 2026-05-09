@@ -513,14 +513,19 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
           <p style="font-size: 1rem; font-weight: 700; color: var(--text2); line-height: 1.6;">「期中考測驗共分為兩部分，第一部分為口說測驗，請同學依照指示看清楚和聽清楚考題，並透過麥克風用適量的音量錄下每一題的答案後上傳到Google表單。」</p>
         </div>
       </div>
-      <audio id="student-audio-intro" controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--sun);">
+      <!-- 修正：獨立出總考前說明的 ID -->
+      <audio id="student-audio-general" controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--sun);">
         <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778323643/voice_260680_q4hnet.mp4">
         您的瀏覽器不支援音檔播放。
       </audio>
-      <audio id="student-audio-intro-ans" controls style="width: 100%; border-radius: 50px; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--na); margin-top: 1rem; display: none;">
+      
+      <!-- 修正：各階段專用自動廣播音檔 (隱藏) -->
+      <audio id="student-audio-intro-task1" style="display: none;">
+        <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778337250/voice_260717_occ8bc.mp4">
+      </audio>
+      <audio id="student-audio-intro-ans-task1" style="display: none;">
         <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778342420/voice_260762_mgbisy.mp4">
       </audio>
-      <!-- Task 2 專用音檔 (隱藏，請在此更換 src) -->
       <audio id="student-audio-intro-task2" style="display: none;">
         <source src="https://res.cloudinary.com/dm1ksvptk/video/upload/v1778337250/voice_260717_occ8bc.mp4">
       </audio>
@@ -719,51 +724,80 @@ const DIALECTS = {
 };
 
 const STORY_TASKS = [
-  { id:'A', label:'A：數字與代名詞', img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778367058/Gemini_Generated_Image_i80sd6i80sd6i80s_hhxhww.png', vocab:[
-    {z:'1', MA:'cecay', NA:'cacay', SA:'cecay', HA:'cecay'},
-    {z:'10', MA:'moetep', NA:"pulu' / muketep", SA:"polo' / mo^tep", HA:"polo' / mo'etep"},
-    {z:'我(主格)', MA:'kako', NA:'kaku', SA:'kako', HA:'kako'},
-    {z:'我的(屬格)', MA:'no mako', NA:'nu maku', SA:'no mako', HA:'no mako'},
-    {z:'你(主格)', MA:'kiso', NA:'kisu', SA:'kiso', HA:'kiso'},
-    {z:'你的(屬格)', MA:'no miso', NA:'nu misu', SA:'no miso', HA:'no miso'}
-  ] },
-  { id:'B', label:'B：親屬與人物', vocab:[
-    {z:'母親', MA:'wina', NA:'ina / wina', SA:'ina', HA:'ina / wina'},
-    {z:'父親', MA:'wama', NA:'ama / wama', SA:'mama', HA:'mama'},
-    {z:'兄/姐', MA:'kaka', NA:'kaka', SA:'kaka', HA:'kaka'},
-    {z:'弟/妹', MA:'safa', NA:'sava', SA:'safa', HA:'safa'},
-    {z:'叔叔', MA:'faki', NA:'vaki', SA:'faki', HA:'faki'},
-    {z:'阿姨', MA:'fayi', NA:'vayi', SA:'fayi', HA:'fayi'},
-    {z:'老師', MA:'singsi', NA:'pasevanaay', SA:'singsi', HA:'singsi'},
-    {z:'醫生', MA:'ising', NA:'ising', SA:'ising', HA:'ising'},
-    {z:'男性', MA:'fainayan', NA:'vavainaya', SA:"fa'inayan", HA:"fa'inayan"},
-    {z:'女性', MA:'fafahiyan', NA:'vavahiyan', SA:'fafahiyan', HA:'fafahiyan'}
-  ] },
-  { id:'C', label:'C：身體部位', vocab:[
-    {z:'頭', MA:'fongoh', NA:'tangal', SA:'tangal', HA:'fongoh'},
-    {z:'眼睛', MA:'mata', NA:'mata', SA:'mata', HA:'mata'},
-    {z:'嘴巴', MA:'ngoyos', NA:'nguyus', SA:'ngapa', HA:'ngoyos'},
-    {z:'手', MA:'kamay', NA:'kamay', SA:'kamay', HA:'kamay'},
-    {z:'腳', MA:"oo'", NA:"kuku'", SA:"wa'ay", HA:"wa'ay"}
-  ] },
-  { id:'D', label:'D：動物與物品', vocab:[
-    {z:'山豬', MA:'fafoy', NA:'vavuy', SA:'fafoy', HA:'fafoy'},
-    {z:'狗', MA:'waco', NA:'wacu', SA:'waco', HA:'waco'},
-    {z:'貓', MA:'posi', NA:"nani'", SA:'posi', HA:'posi'},
-    {z:'魚', MA:'foting', NA:'futing', SA:'foting', HA:'foting'},
-    {z:'鳥', MA:'ayam', NA:'ayam', SA:"koko' / 'ayam", HA:'ayam'},
-    {z:'球', MA:'mali', NA:'mali', SA:'mali', HA:'mali'},
-    {z:'衣服', MA:"riko'", NA:'vuduy', SA:'fodoy', HA:"riko'"},
-    {z:'電話', MA:'tingwa', NA:'telay', SA:'tingwa', HA:'tingwa'},
-    {z:'錢', MA:'payso', NA:'pida', SA:'pida / payso', HA:'payso'}
-  ] },
-  { id:'E', label:'E：植物與食物', vocab:[
-    {z:'芋頭', MA:'tali', NA:'tali', SA:'tali', HA:'tali'},
-    {z:'香蕉', MA:'pawli', NA:'pawli', SA:'pawli', HA:'pawli'},
-    {z:'橘子', MA:'asiro', NA:'kama', SA:"mami'", HA:"mami'"},
-    {z:'樹', MA:'kilang', NA:'kilang', SA:'kilang', HA:'kilang'},
-    {z:'地瓜', MA:'konga', NA:'vunga', SA:'fonga', HA:'konga'}
-  ] },
+  { 
+    id:'A', 
+    label:'A：數字與代名詞', 
+    sentence: 'Papina ku malekakaay nu misu?', 
+    audio: 'https://klokah.tw/extension/sp_junior/sound/1/6match/1_4_A.mp3', 
+    img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778367058/Gemini_Generated_Image_i80sd6i80sd6i80s_hhxhww.png', 
+    vocab:[
+      {z:'1', MA:'cecay', NA:'cacay', SA:'cecay', HA:'cecay'},
+      {z:'10', MA:'moetep', NA:"pulu' / muketep", SA:"polo' / mo^tep", HA:"polo' / mo'etep"},
+      {z:'我(主格)', MA:'kako', NA:'kaku', SA:'kako', HA:'kako'},
+      {z:'我的(屬格)', MA:'no mako', NA:'nu maku', SA:'no mako', HA:'no mako'},
+      {z:'你(主格)', MA:'kiso', NA:'kisu', SA:'kiso', HA:'kiso'},
+      {z:'你的(屬格)', MA:'no miso', NA:'nu misu', SA:'no miso', HA:'no miso'},
+      {z:'有；擁有', MA:'ira ko', NA:'ira ku', SA:'ira ko', HA:'ira ko'}
+    ] 
+  },
+  { 
+    id:'B', 
+    label:'B：親屬與人物', 
+    sentence: '', // 等待你補充 B 的句子
+    audio: '', // 等待你補充 B 的音檔
+    img: '', // 等待你補充 B 的圖片
+    vocab:[
+      {z:'母親', MA:'wina', NA:'ina / wina', SA:'ina', HA:'ina / wina'},
+      {z:'父親', MA:'wama', NA:'ama / wama', SA:'mama', HA:'mama'},
+      {z:'兄/姐', MA:'kaka', NA:'kaka', SA:'kaka', HA:'kaka'},
+      {z:'弟/妹', MA:'safa', NA:'sava', SA:'safa', HA:'safa'},
+      {z:'叔叔', MA:'faki', NA:'vaki', SA:'faki', HA:'faki'},
+      {z:'阿姨', MA:'fayi', NA:'vayi', SA:'fayi', HA:'fayi'},
+      {z:'原住民', MA:'Yemcomin', NA:'Yemcumin', SA:'Yemcomin', HA:'Yemcomin'},
+      {z:'老師', MA:'singsi', NA:'pasevanaay', SA:'singsi', HA:'singsi'},
+      {z:'兄弟姐妹', MA:'salikaka', NA:'malekaka / malekakaay', SA:'malekaka', HA:'salikaka'},
+      {z:'醫生', MA:'ising', NA:'ising', SA:'ising', HA:'ising'},
+      {z:'男性', MA:'fainayan', NA:'vavainaya', SA:"fa'inayan", HA:"fa'inayan"},
+      {z:'女性', MA:'fafahiyan', NA:'vavahiyan', SA:'fafahiyan', HA:'fafahiyan'}
+    ] 
+  },
+  { 
+    id:'C', 
+    label:'C：身體部位', 
+    vocab:[
+      {z:'頭', MA:'fongoh', NA:'tangal', SA:'tangal', HA:'fongoh'},
+      {z:'眼睛', MA:'mata', NA:'mata', SA:'mata', HA:'mata'},
+      {z:'嘴巴', MA:'ngoyos', NA:'nguyus', SA:'ngapa', HA:'ngoyos'},
+      {z:'手', MA:'kamay', NA:'kamay', SA:'kamay', HA:'kamay'},
+      {z:'腳', MA:"oo'", NA:"kuku'", SA:"wa'ay", HA:"wa'ay"}
+    ] 
+  },
+  { 
+    id:'D', 
+    label:'D：動物與物品', 
+    vocab:[
+      {z:'山豬', MA:'fafoy', NA:'vavuy', SA:'fafoy', HA:'fafoy'},
+      {z:'狗', MA:'waco', NA:'wacu', SA:'waco', HA:'waco'},
+      {z:'貓', MA:'posi', NA:"nani'", SA:'posi', HA:'posi'},
+      {z:'魚', MA:'foting', NA:'futing', SA:'foting', HA:'foting'},
+      {z:'鳥', MA:'ayam', NA:'ayam', SA:"koko' / 'ayam", HA:'ayam'},
+      {z:'球', MA:'mali', NA:'mali', SA:'mali', HA:'mali'},
+      {z:'衣服', MA:"riko'", NA:'vuduy', SA:'fodoy', HA:"riko'"},
+      {z:'電話', MA:'tingwa', NA:'telay', SA:'tingwa', HA:'tingwa'},
+      {z:'錢', MA:'payso', NA:'pida', SA:'pida / payso', HA:'payso'}
+    ] 
+  },
+  { 
+    id:'E', 
+    label:'E：植物與食物', 
+    vocab:[
+      {z:'芋頭', MA:'tali', NA:'tali', SA:'tali', HA:'tali'},
+      {z:'香蕉', MA:'pawli', NA:'pawli', SA:'pawli', HA:'pawli'},
+      {z:'橘子', MA:'asiro', NA:'kama', SA:"mami'", HA:"mami'"},
+      {z:'樹', MA:'kilang', NA:'kilang', SA:'kilang', HA:'kilang'},
+      {z:'地瓜', MA:'konga', NA:'vunga', SA:'fonga', HA:'konga'}
+    ] 
+  }
 ];
 
 let currentMode = null;
@@ -905,6 +939,14 @@ function renderStorySection(containerId, prefix) {
     <div class="story-panel${i===0?' active':''}" id="${prefix}-panel-${t.id}">
       <div class="task-block">
         <div class="task-header"><h3>${t.label}</h3><span class="task-tag">PICTURE TASK</span></div>
+        ${t.sentence ? `
+        <div style="padding: 1rem 1.5rem; background: var(--bg); border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
+          <div style="font-size: 1.3rem; font-weight: 900; color: var(--text);">${t.sentence}</div>
+          <audio controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+            <source src="${t.audio || ''}" type="audio/mp4">
+            您的瀏覽器不支援音檔播放。
+          </audio>
+        </div>` : ''}
         <div class="exam-image-wrap">
           ${t.img ? `<img class="exam-image" src="${t.img}" alt="${t.label}">` : `
           <div style="text-align:center;color:var(--text);padding:3rem;">
@@ -973,6 +1015,9 @@ window.setAsyncDialect = d => {
 window.teacherStartWithDelay = (task, prepSecs, answerSecs, delaySecs, audioId) => {
   if (!window.teacherStartExam) return;
   document.getElementById('teacher-dot').classList.add('live');
+
+  // 💡 播放新音檔前，強制暫停所有正在播放的聲音，避免重疊
+  document.querySelectorAll('audio').forEach(a => a.pause());
 
   // 1. 嘗試播放畫面上的音檔給老師聽
   if (audioId) {
@@ -1076,16 +1121,19 @@ function runIntroPhase(data) {
   
   // 嘗試幫學生端也自動播放廣播音檔（依據準備時間是否為 0 以及任務 ID 判斷播放哪一個）
   if (currentMode === 'student') {
+    // 💡 播放新音檔前，強制暫停所有正在播放的聲音，避免重疊
+    document.querySelectorAll('audio').forEach(a => a.pause());
+
     let audioId = '';
     if (data.task === 'task1') {
-      audioId = (data.prepSecs === 0) ? 'student-audio-intro-ans' : 'student-audio-intro';
+      audioId = (data.prepSecs === 0) ? 'student-audio-intro-ans-task1' : 'student-audio-intro-task1';
     } else if (data.task === 'task2') {
       audioId = (data.prepSecs === 0) ? 'student-audio-intro-ans-task2' : 'student-audio-intro-task2';
     }
     
     if (audioId) {
       const studentAudio = document.getElementById(audioId);
-      if (studentAudio && studentAudio.paused) {
+      if (studentAudio) {
         studentAudio.currentTime = 0;
         studentAudio.play().catch(e => console.warn('學生端自動播放阻擋:', e));
       }
