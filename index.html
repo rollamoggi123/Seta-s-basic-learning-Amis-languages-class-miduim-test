@@ -405,6 +405,13 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
       <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="Teacher Logo" class="panel-logo">
       <h3>發送同步考試指令</h3>
       
+      <!-- 💡 幫助老師本地端測試的神奇開關 -->
+      <div style="margin-bottom: 1.5rem; padding: 0.6rem 1rem; background: #fff; border: 2px dashed var(--danger); border-radius: 12px; display: inline-block;">
+        <label style="font-weight: 700; color: var(--danger); cursor: pointer; font-size: 0.95rem;">
+          <input type="checkbox" id="mute-teacher-audio" checked style="transform: scale(1.3); margin-right: 0.5rem;"> 🔇 測試時關閉老師端音效 (防止自己開雙視窗產生回音)
+        </label>
+      </div>
+      
       <!-- Task 1 獨立控制區與音檔 -->
       <div style="background: var(--bg); padding: 1rem; border-radius: 16px; border: 3px solid var(--ink); margin-bottom: 1.5rem;">
         <h4 style="margin-bottom: 0.8rem; color: var(--text); font-weight: 900; font-size: 1.1rem;">📝 Task 1 朗讀</h4>
@@ -701,7 +708,7 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
 <footer>臺師大 阿美族語基礎班 · 族語認證評量系統 · 2026</footer>
 
 <script>
-// 💡 新增：全域音檔互斥機制 (保證任何時候都只有一個聲音在播放)
+// 💡 強力防重疊：全域音檔管理 (保證任何時候只有唯一一個聲音能播放)
 document.addEventListener('play', function(e) {
   if (e.target.tagName === 'AUDIO') {
     document.querySelectorAll('audio').forEach(audio => {
@@ -710,7 +717,7 @@ document.addEventListener('play', function(e) {
       }
     });
   }
-}, true); // 使用 true (捕獲階段) 確保能攔截到所有播放事件
+}, true);
 
 let wakeLock = null;
 async function requestWakeLock() {
@@ -750,7 +757,12 @@ const STORY_TASKS = [
       SA: 'https://klokah.tw/extension/sp_junior/sound/2/6match/1_3_A.mp3',
       HA: 'https://klokah.tw/extension/sp_junior/sound/3/6match/1_3_A.mp3'
     }, 
-    sentenceAnswer: '請替換成答題範例文本 (例如: Tusa ku malekakaay nu maku.)', 
+    sentenceAnswer: {
+      MA: '看圖後，改代名詞和數字 (例如: Tosa ko 哥哥 ato 姐姐 no mako.)',
+      NA: '看圖後，改代名詞和數字 (例如: Tusa ku 哥哥 atu 姐姐 nu maku.)',
+      SA: '看圖後，改代名詞和數字 (例如: Tosa ko 哥哥 ato 姐姐 no mako.)',
+      HA: '看圖後，改代名詞和數字 (例如: Tosa ko 哥哥 ato 姐姐 no mako.)'
+    }, 
     audioAnswer: '', 
     img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778367058/Gemini_Generated_Image_i80sd6i80sd6i80s_hhxhww.png', 
     vocab:[
@@ -1096,8 +1108,11 @@ window.teacherStartWithDelay = (task, prepSecs, answerSecs, delaySecs, audioId) 
   // 💡 播放新音檔前，強制暫停所有正在播放的聲音，避免重疊
   document.querySelectorAll('audio').forEach(a => a.pause());
 
-  // 1. 嘗試播放畫面上的音檔給老師聽
-  if (audioId) {
+  // 檢查老師端是否開啟靜音開關
+  const isTeacherMuted = document.getElementById('mute-teacher-audio')?.checked;
+
+  // 1. 若無靜音，嘗試播放畫面上的音檔給老師聽
+  if (audioId && !isTeacherMuted) {
     const audioEl = document.getElementById(audioId);
     if (audioEl) {
       audioEl.currentTime = 0;
@@ -1309,7 +1324,11 @@ window.toggleLTimer = n => {
   // 如果是全新開始，自動播放說明音檔
   if (ltRemaining[n] === ltDefaults[n]) {
     const audioEl = document.getElementById('async-audio-'+n);
-    if (audioEl) { audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }
+    if (audioEl) { 
+      document.querySelectorAll('audio').forEach(a => a.pause()); // 保證乾淨
+      audioEl.currentTime = 0; 
+      audioEl.play().catch(()=>{}); 
+    }
   }
 
   ltState[n] = setInterval(() => {
