@@ -118,8 +118,9 @@ button:active, .btn-style:active, .mode-card:active {
 /* ── MODE SELECTOR ── */
 .mode-selector {
   position: fixed; inset: 0; z-index: 999;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2.5rem; padding: 2rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 2.5rem; padding: 3rem 1.5rem;
+  overflow-y: auto;
   background-color: var(--bg);
   background-image: radial-gradient(var(--ink) 1.5px, transparent 1.5px);
   background-size: 24px 24px;
@@ -350,20 +351,20 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
 <body>
 
 <div id="mode-selector" class="mode-selector">
-  <div style="text-align: center; max-width: 800px; padding-bottom: 1rem;">
+  <div style="text-align: center; max-width: 800px; padding-bottom: 1rem; margin-top: auto;">
     <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="Sonay Rolla Moggi" style="width: 140px; height: 140px; border-radius: 50%; border: 5px solid var(--ink); box-shadow: var(--shadow-md); margin-bottom: 1.5rem; background: var(--surface); object-fit: cover;">
     
-    <h2 style="font-size: 1.3rem; font-weight: 900; color: var(--text); background: var(--sun); padding: 0.4rem 1.5rem; border: 3px solid var(--ink); border-radius: 12px; display: inline-block; margin-bottom: 1rem; box-shadow: var(--shadow-sm); transform: rotate(-1deg);">
+    <h2 style="font-size: clamp(0.9rem, 3.5vw, 1.3rem); font-weight: 900; color: var(--text); background: var(--sun); padding: 0.4rem 1.5rem; border: 3px solid var(--ink); border-radius: 12px; display: inline-block; margin-bottom: 1rem; box-shadow: var(--shadow-sm); transform: rotate(-1deg);">
       國立臺灣師範大學 — 台北原住民語言學習中心
     </h2>
     
-    <h1 style="font-size: clamp(3rem, 8vw, 4.5rem); line-height: 1.2;">阿美語基礎班</h1>
+    <h1 style="font-size: clamp(2.5rem, 8vw, 4.5rem); line-height: 1.2;">阿美語基礎班</h1>
     
-    <p style="font-size: 1.3rem; padding: 0.6rem 2rem; margin-top: 0.5rem;">
+    <p style="font-size: clamp(1rem, 4vw, 1.3rem); padding: 0.6rem 2rem; margin-top: 0.5rem;">
       👩🏽‍🏫 授課教師：蘿拉麻吉 Sonay Rolla Moggi
     </p>
   </div>
-  <div class="mode-cards">
+  <div class="mode-cards" style="margin-bottom: auto;">
     <div class="mode-card" onclick="openPwdModal()">
       <div class="icon">
         <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="老師LOGO" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); box-shadow: 2px 2px 0px var(--ink); object-fit: cover; background: var(--surface);">
@@ -1244,14 +1245,41 @@ window.toggleRec = async id => {
       else if (finalMime.includes('wav')) ext = 'wav';
 
       const blob = new Blob(chunks, { type: finalMime });
+      const fileName = `amis_${id}_${Date.now()}.${ext}`;
+      const file = new File([blob], fileName, { type: finalMime });
       const url = URL.createObjectURL(blob);
       const dl = document.getElementById('dl-'+id);
+      
       if (dl) { 
         dl.href = url; 
-        dl.download = `amis_${id}_${Date.now()}.${ext}`; 
+        dl.download = fileName; 
+        dl.target = '_blank'; // 確保如果傳統下載失敗，至少能開新分頁讓 iOS 播放器接管
         dl.classList.add('ready'); 
-        dl.textContent = `下載 .${ext}`; 
+        dl.textContent = `儲存 / 下載 .${ext}`; 
+        
+        // 🚨 針對 Apple (iOS/Mac) 的終極解法：使用 Web Share API 喚起原生分享/儲存選單
+        dl.onclick = async (e) => {
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            e.preventDefault(); // 攔截傳統下載
+            try {
+              await navigator.share({
+                files: [file],
+                title: fileName
+              });
+            } catch (err) {
+              console.warn('分享/儲存取消或失敗，退回傳統下載:', err);
+              // 如果使用者取消或發生錯誤，強行補一刀原生下載
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = fileName;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }
+          }
+        };
       }
+      
       // 停止錄音後，顯示播放器並載入音檔
       if (audioEl) {
         audioEl.src = url;
