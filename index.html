@@ -738,7 +738,7 @@ const DIALECTS = {
   MA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778311188/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_151801_uphzpb.png', title:'馬蘭阿美語 朗讀', color: 'var(--ma)', quizTitle: '數字篇：馬蘭阿美語', quizLink: 'https://wayground.com/join?gc=43940433' },
   NA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778310923/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_151311_uj6hks.png', title:'南勢阿美語 朗讀', color: 'var(--na)', quizTitle: '數字篇：南勢阿美語', quizLink: 'https://wayground.com/join?gc=28146257' },
   SA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778310515/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_134018_m65bpu.png', title:'秀姑巒阿美語 朗讀', color: 'var(--sa)', quizTitle: '數字篇：秀姑巒阿美語', quizLink: 'https://wayground.com/join?gc=58292817' },
-  HA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778311383/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_152203_pqtmwn.png', title:'海岸阿美語 朗讀', color: 'var(--ha)', quizTitle: '數字篇：海岸阿美語', quizLink: 'https://wayground.com/join?gc=請替換海岸代碼' },
+  HA: { img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778311383/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2_2026-05-09_152203_pqtmwn.png', title:'海岸阿美語 朗讀', color: 'var(--ha)', quizTitle: '數字篇：海岸阿美語', quizLink: 'https://wayground.com/join?gc=44218961' },
 };
 
 const STORY_TASKS = [
@@ -778,25 +778,54 @@ const STORY_TASKS = [
   { 
     id:'B', 
     label:'B：親屬與人物', 
-    sentence: {
-      MA: 'O Yincomin ko wama iso haw?',
-      NA: 'O Yincomin ku wama isu haw?',
-      SA: 'O Yincomin ko wama iso haw?',
-      HA: 'O Yincomin ko wama iso haw?'
-    }, 
-    audio: {
-      MA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
-      NA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
-      SA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
-      HA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3'
-    }, 
-    sentenceAnswer: {
-      MA: '看圖後，回答問題 (例如: Hay, O Yincomin ko wama no mako.)',
-      NA: '看圖後，回答問題 (例如: Hay, O Yincomin ku wama nu maku.)',
-      SA: '看圖後，回答問題 (例如: Hay, O Yincomin ko wama no mako.)',
-      HA: '看圖後，回答問題 (例如: Hay, O Yincomin ko wama no mako.)'
-    }, 
-    audioAnswer: '', 
+    questions: [
+      {
+        title: '❓ 第一題：',
+        sentence: {
+          MA: 'Papinaay ko salikaka iso?',
+          NA: 'Papina ku malekakaay nu misu?',
+          SA: 'Papina ko salikaka no miso?',
+          HA: 'Papina ko salikaka iso?'
+        },
+        audio: {
+          MA: 'https://klokah.tw/extension/sp_junior/sound/4/6match/1_3_A.mp3',
+          NA: 'https://klokah.tw/extension/sp_junior/sound/1/6match/1_4_A.mp3',
+          SA: 'https://klokah.tw/extension/sp_junior/sound/2/6match/1_3_A.mp3',
+          HA: 'https://klokah.tw/extension/sp_junior/sound/3/6match/1_3_A.mp3'
+        },
+        answerTitle: '💡 第一題答題範例：',
+        sentenceAnswer: {
+          MA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatosa-ay ko 哥哥 ato 姐姐 no mako.)',
+          NA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatusa-ay ku 哥哥 atu 姐姐 nu maku.)',
+          SA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatosa-ay ko 哥哥 ato 姐姐 no mako.)',
+          HA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatosa-ay ko 哥哥 ato 姐姐 no mako.)'
+        },
+        audioAnswer: ''
+      },
+      {
+        title: '⭐ 加分題：',
+        sentence: {
+          MA: 'O Yincomin ko wama iso haw?',
+          NA: 'O Yincomin ku wama isu haw?',
+          SA: 'O Yincomin ko wama iso haw?',
+          HA: 'O Yincomin ko wama iso haw?'
+        },
+        audio: {
+          MA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
+          NA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
+          SA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
+          HA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3'
+        },
+        answerTitle: '💡 加分題答題範例：',
+        sentenceAnswer: {
+          MA: '看圖後，回答問題 (例如: 是的, 我的....是......)',
+          NA: '看圖後，回答問題 (例如: 是的, 我的....是......)',
+          SA: '看圖後，回答問題 (例如: 是的, 我的....是......)',
+          HA: '看圖後，回答問題 (例如: 是的, 我的....是......)'
+        },
+        audioAnswer: ''
+      }
+    ],
     img: 'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778371041/Gemini_Generated_Image_lkc2vmlkc2vmlkc2_ghocgd.png', 
     vocab:[
       {z:'母親', MA:'wina', NA:'ina / wina', SA:'ina', HA:'ina / wina'},
@@ -866,7 +895,7 @@ const STORY_TASKS = [
       HA: '看圖後，回答這是什麼 (例如: O waco koni.)'
     }, 
     audioAnswer: '', 
-    img: '', 
+    img: 'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778374341/Gemini_Generated_Image_masx5mmasx5mmasx_mbbrj1.png', 
     vocab:[
       {z:'山豬', MA:'fafoy', NA:'vavuy', SA:'fafoy', HA:'fafoy'},
       {z:'狗', MA:'waco', NA:'wacu', SA:'waco', HA:'waco'},
@@ -882,6 +911,26 @@ const STORY_TASKS = [
   { 
     id:'E', 
     label:'E：植物與食物', 
+    sentence: {
+      MA: 'Pinaay ko heci no losay no miso?',
+      NA: 'Pinaay ku heci nu lusay nu misu?',
+      SA: 'Pinaay ko heci no losay no miso?',
+      HA: 'Pinaay ko heci no losay no miso?'
+    }, 
+    audio: {
+      MA: 'https://res.cloudinary.com/dm1ksvptk/video/upload/v1778374250/voice_260794_jy6ldp.mp4',
+      NA: 'https://res.cloudinary.com/dm1ksvptk/video/upload/v1778374250/voice_260794_jy6ldp.mp4',
+      SA: 'https://res.cloudinary.com/dm1ksvptk/video/upload/v1778374250/voice_260794_jy6ldp.mp4',
+      HA: 'https://res.cloudinary.com/dm1ksvptk/video/upload/v1778374250/voice_260794_jy6ldp.mp4'
+    }, 
+    sentenceAnswer: {
+      MA: '看圖後，回答數量與物品 (例如: Tosaay ko heci no pawli.)',
+      NA: '看圖後，回答數量與物品 (例如: Tusaay ku heci nu pawli.)',
+      SA: '看圖後，回答數量與物品 (例如: Tosaay ko heci no pawli.)',
+      HA: '看圖後，回答數量與物品 (例如: Tosaay ko heci no pawli.)'
+    }, 
+    audioAnswer: '', 
+    img: 'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778373332/Gemini_Generated_Image_q9pgq9pgq9pgq9pg_pmhhdw.png',
     vocab:[
       {z:'芋頭', MA:'tali', NA:'tali', SA:'tali', HA:'tali'},
       {z:'香蕉', MA:'pawli', NA:'pawli', SA:'pawli', HA:'pawli'},
@@ -895,23 +944,40 @@ const STORY_TASKS = [
 let currentMode = null;
 let isSplitActive = false;
 
-// 新增：密碼鎖控制邏輯
+// 新增：密碼鎖控制邏輯 (加入強力 null 防護)
 function openPwdModal() {
-  document.getElementById('pwd-modal').classList.remove('hidden');
-  document.getElementById('teacher-pwd-input').value = '';
-  document.getElementById('pwd-error').style.display = 'none';
-  setTimeout(() => document.getElementById('teacher-pwd-input').focus(), 100);
+  const modal = document.getElementById('pwd-modal');
+  const input = document.getElementById('teacher-pwd-input');
+  const err = document.getElementById('pwd-error');
+  
+  if (!modal) {
+    console.warn('找不到密碼鎖介面，直接進入老師控制台');
+    enterMode('teacher');
+    return;
+  }
+  
+  modal.classList.remove('hidden');
+  if (input) input.value = '';
+  if (err) err.style.display = 'none';
+  setTimeout(() => { if (input) input.focus(); }, 100);
 }
-function closePwdModal() { document.getElementById('pwd-modal').classList.add('hidden'); }
+function closePwdModal() { 
+  const modal = document.getElementById('pwd-modal');
+  if (modal) modal.classList.add('hidden'); 
+}
 function verifyTeacherPwd() {
-  const pwd = document.getElementById('teacher-pwd-input').value;
+  const input = document.getElementById('teacher-pwd-input');
+  const err = document.getElementById('pwd-error');
+  if (!input) return;
+
+  const pwd = input.value;
   if (pwd === '0901') { // 這裡設定密碼
     closePwdModal();
     enterMode('teacher');
   } else {
-    document.getElementById('pwd-error').style.display = 'block';
-    document.getElementById('teacher-pwd-input').value = '';
-    document.getElementById('teacher-pwd-input').focus();
+    if (err) err.style.display = 'block';
+    input.value = '';
+    input.focus();
   }
 }
 
@@ -1029,26 +1095,32 @@ function renderStorySection(containerId, prefix) {
     `<button class="dtab btn-style${i===0?' active':''}" onclick="showStory('${prefix}','${t.id}')">${t.label}</button>`
   ).join('') + `</div>`;
 
-  const panels = STORY_TASKS.map((t,i) => `
+  const panels = STORY_TASKS.map((t,i) => {
+    const qList = t.questions || [{ title: '❓ 問題：', sentence: t.sentence, audio: t.audio, answerTitle: '💡 答題範例：', sentenceAnswer: t.sentenceAnswer, audioAnswer: t.audioAnswer }];
+    const qHTML = qList.map(q => `
+      ${q.sentence ? `
+      <div style="padding: 1rem 1.5rem; background: var(--bg); border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
+        <div class="q-sentence" data-title="${q.title}" data-ma="${getD(q.sentence, 'MA')}" data-na="${getD(q.sentence, 'NA')}" data-sa="${getD(q.sentence, 'SA')}" data-ha="${getD(q.sentence, 'HA')}" style="font-size: 1.2rem; font-weight: 900; color: var(--text);">${q.title}${getD(q.sentence, 'MA')}</div>
+        <audio class="q-audio" data-ma="${getD(q.audio, 'MA')}" data-na="${getD(q.audio, 'NA')}" data-sa="${getD(q.audio, 'SA')}" data-ha="${getD(q.audio, 'HA')}" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+          <source src="${getD(q.audio, 'MA')}" type="audio/mp4">
+          您的瀏覽器不支援音檔播放。
+        </audio>
+      </div>` : ''}
+      ${q.sentenceAnswer ? `
+      <div style="padding: 1rem 1.5rem; background: #E8F5E9; border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
+        <div class="a-sentence" data-title="${q.answerTitle}" data-ma="${getD(q.sentenceAnswer, 'MA')}" data-na="${getD(q.sentenceAnswer, 'NA')}" data-sa="${getD(q.sentenceAnswer, 'SA')}" data-ha="${getD(q.sentenceAnswer, 'HA')}" style="font-size: 1.2rem; font-weight: 900; color: var(--success);">${q.answerTitle}${getD(q.sentenceAnswer, 'MA')}</div>
+        <audio class="a-audio" data-ma="${getD(q.audioAnswer, 'MA')}" data-na="${getD(q.audioAnswer, 'NA')}" data-sa="${getD(q.audioAnswer, 'SA')}" data-ha="${getD(q.audioAnswer, 'HA')}" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
+          <source src="${getD(q.audioAnswer, 'MA')}" type="audio/mp4">
+          您的瀏覽器不支援音檔播放。
+        </audio>
+      </div>` : ''}
+    `).join('');
+
+    return `
     <div class="story-panel${i===0?' active':''}" id="${prefix}-panel-${t.id}">
       <div class="task-block">
         <div class="task-header"><h3>${t.label}</h3><span class="task-tag">PICTURE TASK</span></div>
-        ${t.sentence ? `
-        <div style="padding: 1rem 1.5rem; background: var(--bg); border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
-          <div class="q-sentence" data-ma="${getD(t.sentence, 'MA')}" data-na="${getD(t.sentence, 'NA')}" data-sa="${getD(t.sentence, 'SA')}" data-ha="${getD(t.sentence, 'HA')}" style="font-size: 1.2rem; font-weight: 900; color: var(--text);">❓ 問題：${getD(t.sentence, 'MA')}</div>
-          <audio class="q-audio" data-ma="${getD(t.audio, 'MA')}" data-na="${getD(t.audio, 'NA')}" data-sa="${getD(t.audio, 'SA')}" data-ha="${getD(t.audio, 'HA')}" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
-            <source src="${getD(t.audio, 'MA')}" type="audio/mp4">
-            您的瀏覽器不支援音檔播放。
-          </audio>
-        </div>` : ''}
-        ${t.sentenceAnswer ? `
-        <div style="padding: 1rem 1.5rem; background: #E8F5E9; border-bottom: 3px solid var(--ink); display: flex; flex-direction: column; gap: 0.8rem;">
-          <div class="a-sentence" data-ma="${getD(t.sentenceAnswer, 'MA')}" data-na="${getD(t.sentenceAnswer, 'NA')}" data-sa="${getD(t.sentenceAnswer, 'SA')}" data-ha="${getD(t.sentenceAnswer, 'HA')}" style="font-size: 1.2rem; font-weight: 900; color: var(--success);">💡 答題範例：${getD(t.sentenceAnswer, 'MA')}</div>
-          <audio class="a-audio" data-ma="${getD(t.audioAnswer, 'MA')}" data-na="${getD(t.audioAnswer, 'NA')}" data-sa="${getD(t.audioAnswer, 'SA')}" data-ha="${getD(t.audioAnswer, 'HA')}" controls style="width: 100%; height: 44px; border-radius: 50px; border: 2px solid var(--ink); background: #fff;">
-            <source src="${getD(t.audioAnswer, 'MA')}" type="audio/mp4">
-            您的瀏覽器不支援音檔播放。
-          </audio>
-        </div>` : ''}
+        ${qHTML}
         <div class="exam-image-wrap">
           ${t.img ? `<img class="exam-image" src="${t.img}" alt="${t.label}">` : `
           <div style="text-align:center;color:var(--text);padding:3rem;">
@@ -1065,7 +1137,8 @@ function renderStorySection(containerId, prefix) {
           <audio id="audio-${prefix}${t.id}" class="playback-audio" controls style="display:none;"></audio>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   wrap.innerHTML = tabs + panels;
 }
 
@@ -1093,7 +1166,7 @@ window.setReadingDialect = d => {
     el.textContent = el.dataset[d.toLowerCase()];
   });
   document.querySelectorAll('#story-section-sync .q-sentence').forEach(el => {
-    el.textContent = '❓ 問題：' + el.dataset[d.toLowerCase()];
+    el.textContent = (el.dataset.title || '❓ 問題：') + el.dataset[d.toLowerCase()];
   });
   document.querySelectorAll('#story-section-sync .q-audio').forEach(el => {
     const src = el.dataset[d.toLowerCase()];
@@ -1104,7 +1177,7 @@ window.setReadingDialect = d => {
     }
   });
   document.querySelectorAll('#story-section-sync .a-sentence').forEach(el => {
-    el.textContent = '💡 答題範例：' + el.dataset[d.toLowerCase()];
+    el.textContent = (el.dataset.title || '💡 答題範例：') + el.dataset[d.toLowerCase()];
   });
   document.querySelectorAll('#story-section-sync .a-audio').forEach(el => {
     const src = el.dataset[d.toLowerCase()];
@@ -1134,7 +1207,7 @@ window.setAsyncDialect = d => {
     el.textContent = el.dataset[d.toLowerCase()];
   });
   document.querySelectorAll('#story-section-async .q-sentence').forEach(el => {
-    el.textContent = '❓ 問題：' + el.dataset[d.toLowerCase()];
+    el.textContent = (el.dataset.title || '❓ 問題：') + el.dataset[d.toLowerCase()];
   });
   document.querySelectorAll('#story-section-async .q-audio').forEach(el => {
     const src = el.dataset[d.toLowerCase()];
@@ -1145,7 +1218,7 @@ window.setAsyncDialect = d => {
     }
   });
   document.querySelectorAll('#story-section-async .a-sentence').forEach(el => {
-    el.textContent = '💡 答題範例：' + el.dataset[d.toLowerCase()];
+    el.textContent = (el.dataset.title || '💡 答題範例：') + el.dataset[d.toLowerCase()];
   });
   document.querySelectorAll('#story-section-async .a-audio').forEach(el => {
     const src = el.dataset[d.toLowerCase()];
