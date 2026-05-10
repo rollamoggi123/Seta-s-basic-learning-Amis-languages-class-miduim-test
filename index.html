@@ -778,8 +778,25 @@ const STORY_TASKS = [
   { 
     id:'B', 
     label:'B：親屬與人物', 
-    sentence: '', // 等待你補充 B 的句子
-    audio: '', // 等待你補充 B 的音檔
+    sentence: {
+      MA: 'O Yincomin ko wama iso haw?',
+      NA: 'O Yincomin ku wama isu haw?',
+      SA: 'O Yincomin ko wama iso haw?',
+      HA: 'O Yincomin ko wama iso haw?'
+    }, 
+    audio: {
+      MA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
+      NA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
+      SA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3',
+      HA: 'https://klokah.tw/extension/sp_junior/sound/4/9dialogue/1_6_D.mp3'
+    }, 
+    sentenceAnswer: {
+      MA: '看圖後，回答問題 (例如: Hay, O Yincomin ko wama no mako.)',
+      NA: '看圖後，回答問題 (例如: Hay, O Yincomin ku wama nu maku.)',
+      SA: '看圖後，回答問題 (例如: Hay, O Yincomin ko wama no mako.)',
+      HA: '看圖後，回答問題 (例如: Hay, O Yincomin ko wama no mako.)'
+    }, 
+    audioAnswer: '', 
     img: 'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778371041/Gemini_Generated_Image_lkc2vmlkc2vmlkc2_ghocgd.png', 
     vocab:[
       {z:'母親', MA:'wina', NA:'ina / wina', SA:'ina', HA:'ina / wina'},
