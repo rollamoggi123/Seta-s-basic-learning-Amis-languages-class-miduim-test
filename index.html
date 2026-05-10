@@ -758,13 +758,13 @@ const STORY_TASKS = [
       HA: 'https://klokah.tw/extension/sp_junior/sound/3/6match/1_3_A.mp3'
     }, 
     sentenceAnswer: {
-      MA: '看圖後，改代名詞和數字 (例如: Tosa ko 哥哥 ato 姐姐 no mako.)',
-      NA: '看圖後，改代名詞和數字 (例如: Tusa ku 哥哥 atu 姐姐 nu maku.)',
-      SA: '看圖後，改代名詞和數字 (例如: Tosa ko 哥哥 ato 姐姐 no mako.)',
-      HA: '看圖後，改代名詞和數字 (例如: Tosa ko 哥哥 ato 姐姐 no mako.)'
+      MA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatosa-ay ko 哥哥 ato 姐姐 no mako.)',
+      NA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatusa-ay ku 哥哥 atu 姐姐 nu maku.)',
+      SA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatosa-ay ko 哥哥 ato 姐姐 no mako.)',
+      HA: '看圖後，改代名詞和數字, 注意數人的規則 Ca+數字(例如 : tatosa-ay ko 哥哥 ato 姐姐 no mako.)'
     }, 
     audioAnswer: '', 
-    img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778367058/Gemini_Generated_Image_i80sd6i80sd6i80s_hhxhww.png', 
+    img:'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778370321/Gemini_Generated_Image_i8y3q2i8y3q2i8y3_d5aomn.png', 
     vocab:[
       {z:'1', MA:'cecay', NA:'cacay', SA:'cecay', HA:'cecay'},
       {z:'10', MA:'moetep', NA:"pulu' / muketep", SA:"polo' / mo^tep", HA:"polo' / mo'etep"},
@@ -780,7 +780,7 @@ const STORY_TASKS = [
     label:'B：親屬與人物', 
     sentence: '', // 等待你補充 B 的句子
     audio: '', // 等待你補充 B 的音檔
-    img: '', // 等待你補充 B 的圖片
+    img: 'https://res.cloudinary.com/dm1ksvptk/image/upload/v1778371041/Gemini_Generated_Image_lkc2vmlkc2vmlkc2_ghocgd.png', 
     vocab:[
       {z:'母親', MA:'wina', NA:'ina / wina', SA:'ina', HA:'ina / wina'},
       {z:'父親', MA:'wama', NA:'ama / wama', SA:'mama', HA:'mama'},
@@ -799,6 +799,26 @@ const STORY_TASKS = [
   { 
     id:'C', 
     label:'C：身體部位', 
+    sentence: {
+      MA: 'O maan kora?',
+      NA: 'O maan kura?',
+      SA: 'O maan kora?',
+      HA: 'O maan kora?'
+    }, 
+    audio: {
+      MA: 'https://web.klokah.tw/text/sound/20762/372916.mp3',
+      NA: 'https://web.klokah.tw/text/sound/20762/372916.mp3',
+      SA: 'https://web.klokah.tw/text/sound/20762/372916.mp3',
+      HA: 'https://web.klokah.tw/text/sound/20762/372916.mp3'
+    }, 
+    sentenceAnswer: {
+      MA: '看圖後，回答那是什麼部位 (例如: O mata kora.)',
+      NA: '看圖後，回答那是什麼部位 (例如: O mata kura.)',
+      SA: '看圖後，回答那是什麼部位 (例如: O mata kora.)',
+      HA: '看圖後，回答那是什麼部位 (例如: O mata kora.)'
+    }, 
+    audioAnswer: '', 
+    img: 'https://res.cloudinary.com/dm1ksvptk/image/upload/v1769544408/%E5%98%B4%E5%B7%B4_dr1fnn.png', 
     vocab:[
       {z:'頭', MA:'fongoh', NA:'tangal', SA:'tangal', HA:'fongoh'},
       {z:'眼睛', MA:'mata', NA:'mata', SA:'mata', HA:'mata'},
@@ -810,6 +830,26 @@ const STORY_TASKS = [
   { 
     id:'D', 
     label:'D：動物與物品', 
+    sentence: {
+      MA: 'O maan koni?',
+      NA: 'O maan kuni?',
+      SA: 'O maan koni?',
+      HA: 'O maan koni?'
+    }, 
+    audio: {
+      MA: 'https://web.klokah.tw/text/sound/20762/372915.mp3',
+      NA: 'https://web.klokah.tw/text/sound/20762/372915.mp3',
+      SA: 'https://web.klokah.tw/text/sound/20762/372915.mp3',
+      HA: 'https://web.klokah.tw/text/sound/20762/372915.mp3'
+    }, 
+    sentenceAnswer: {
+      MA: '看圖後，回答這是什麼 (例如: O waco koni.)',
+      NA: '看圖後，回答這是什麼 (例如: O wacu kuni.)',
+      SA: '看圖後，回答這是什麼 (例如: O waco koni.)',
+      HA: '看圖後，回答這是什麼 (例如: O waco koni.)'
+    }, 
+    audioAnswer: '', 
+    img: '', 
     vocab:[
       {z:'山豬', MA:'fafoy', NA:'vavuy', SA:'fafoy', HA:'fafoy'},
       {z:'狗', MA:'waco', NA:'wacu', SA:'waco', HA:'waco'},
