@@ -47,6 +47,29 @@
   window.listenExam = function(callback) {
     onValue(ref(db, 'exam/current'), (snapshot) => callback(snapshot.val()));
   };
+
+  window.examSystemOpen = true;
+  window.teacherSetSystemOpen = async function(isOpen) {
+    const open = !!isOpen;
+    await set(ref(db, 'exam/systemOpen'), {
+      open,
+      updatedAt: window.getTrueTime()
+    });
+    if (!open) {
+      await set(ref(db, 'exam/current'), { task: null, phase: 'closed', closedAt: window.getTrueTime() });
+    }
+  };
+
+  onValue(ref(db, 'exam/systemOpen'), (snapshot) => {
+    const raw = snapshot.val();
+    const state = raw === null
+      ? { open: true }
+      : (typeof raw === 'boolean' ? { open: raw } : raw);
+    window.examSystemOpen = state.open !== false;
+    if (window.handleSystemOpenChange) {
+      window.handleSystemOpenChange(window.examSystemOpen, state);
+    }
+  });
 </script>
 
 <style>
@@ -202,7 +225,7 @@ header::before {
 .mode-wrapper.split-active > #student-mode { width: 55%; background: rgba(255, 255, 255, 0.4); }
 .mode-wrapper.split-active main { max-width: 100%; padding: 2rem; margin: 0; }
 
-@media (max-width: 1024px) {
+@media (max-width: 700px) {
   .mode-wrapper.split-active { flex-direction: column; }
   .mode-wrapper.split-active > #teacher-mode { width: 100%; border-right: none; border-bottom: 6px dashed var(--ink); }
   .mode-wrapper.split-active > #student-mode { width: 100%; }
@@ -345,6 +368,41 @@ main { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
 .modal-content { width: 90%; max-width: 400px; padding: 2.5rem 2rem; text-align: center; }
 .modal-input { width: 100%; padding: 1rem; border-radius: 12px; border: 3px solid var(--ink); font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem; outline: none; font-family: 'DM Mono', monospace; box-shadow: inset 2px 2px 0px rgba(0,0,0,0.05); }
 
+.exam-lock-banner {
+  display: none;
+  width: min(720px, calc(100vw - 2rem));
+  padding: 1rem 1.25rem;
+  background: var(--danger);
+  color: #fff;
+  border: 4px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+  font-weight: 900;
+  line-height: 1.6;
+}
+body.exam-closed .exam-lock-banner { display: block; }
+body.exam-closed .student-entry-card,
+body.exam-closed .async-entry-card {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  pointer-events: none;
+}
+.system-control-panel {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+}
+.system-control-panel strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 1.05rem;
+}
+.system-control-panel .closed { color: var(--danger); }
+.system-control-panel .open { color: var(--success); }
+
 footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9rem; font-weight: 900; border-top: 4px solid var(--ink); background: var(--surface); margin-top: 2rem; }
 </style>
 </head>
@@ -364,6 +422,9 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
       👩🏽‍🏫 授課教師：蘿拉麻吉 Sonay Rolla Moggi
     </p>
   </div>
+  <div id="exam-lock-banner" class="exam-lock-banner">
+    測驗已關閉，請同學不要再進入作答。若老師要重新開放，請由「老師頭目」輸入密碼後啟動。
+  </div>
   <div class="mode-cards" style="margin-bottom: auto;">
     <div class="mode-card" onclick="openPwdModal()">
       <div class="icon">
@@ -377,12 +438,12 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
       <h3>老師學生同步監控</h3>
       <p>老師在左側，學生同步畫面在右側</p>
     </div>
-    <div class="mode-card" onclick="enterMode('student')">
+    <div class="mode-card student-entry-card" onclick="enterMode('student')">
       <div class="icon">👦🏽</div>
       <h3>部落學生 (同步)</h3>
       <p>接收指令・自動倒數</p>
     </div>
-    <div class="mode-card" onclick="enterMode('async')">
+    <div class="mode-card async-entry-card" onclick="enterMode('async')">
       <div class="icon">📱</div>
       <h3>自己測驗 (補考)</h3>
       <p>手動控制各階段時間</p>
@@ -409,6 +470,15 @@ footer { text-align: center; padding: 2rem; color: var(--text); font-size: 0.9re
     <div class="teacher-panel cartoon-panel">
       <img src="https://res.cloudinary.com/dm1ksvptk/image/upload/v1749659604/vxem1akzssudvs0neffn.png" alt="Teacher Logo" class="panel-logo">
       <h3>發送同步考試指令</h3>
+
+      <div class="system-control-panel">
+        <strong id="system-open-label">測驗狀態：讀取中</strong>
+        <div class="task-btns" style="margin-bottom:0;">
+          <button class="task-start-btn btn-style" style="background:var(--success); color:#fff;" onclick="teacherOpenTest()">✅ 重新開放測驗</button>
+          <button class="task-start-btn danger btn-style" onclick="teacherCloseTest()">⛔ 關閉測驗</button>
+        </div>
+        <p style="margin-top:0.75rem; font-size:0.9rem; font-weight:700; color:var(--text2);">收考後請按「關閉測驗」，學生端會被擋下，避免考後繼續作答。</p>
+      </div>
       
       <!-- 💡 幫助老師本地端測試的神奇開關 -->
       <div style="margin-bottom: 1.5rem; padding: 0.6rem 1rem; background: #fff; border: 2px dashed var(--danger); border-radius: 12px; display: inline-block;">
@@ -949,6 +1019,8 @@ const STORY_TASKS = [
 let currentMode = null;
 let isSplitActive = false;
 let pendingTeacherMode = 'normal';
+let teacherSessionUnlocked = false;
+let lastClosedNoticeAt = 0;
 
 // 新增：密碼鎖控制邏輯 (加入強力 null 防護)
 function openPwdModal(mode = 'normal') {
@@ -979,6 +1051,7 @@ function verifyTeacherPwd() {
 
   const pwd = input.value;
   if (pwd === '0901') { // 這裡設定密碼
+    teacherSessionUnlocked = true;
     closePwdModal();
     enterMode('teacher');
     if (pendingTeacherMode === 'split' && !isSplitActive) {
@@ -990,7 +1063,60 @@ function verifyTeacherPwd() {
     input.focus();
   }
 }
+function isExamOpen() {
+  return window.examSystemOpen !== false;
+}
+function showClosedNotice() {
+  const now = Date.now();
+  if (now - lastClosedNoticeAt > 1500) {
+    lastClosedNoticeAt = now;
+    alert('測驗已關閉，請洽老師。');
+  }
+}
+function updateSystemOpenUI(open) {
+  document.body.classList.toggle('exam-closed', !open);
+  const label = document.getElementById('system-open-label');
+  if (label) {
+    label.textContent = open ? '測驗狀態：已開放，學生可以進入' : '測驗狀態：已關閉，學生不能進入';
+    label.className = open ? 'open' : 'closed';
+  }
+}
+window.handleSystemOpenChange = (open) => {
+  updateSystemOpenUI(open);
+  if (!open && currentMode && currentMode !== 'teacher') {
+    goBack();
+    showClosedNotice();
+  }
+};
+updateSystemOpenUI(isExamOpen());
+window.teacherOpenTest = async () => {
+  if (!teacherSessionUnlocked) {
+    openPwdModal();
+    return;
+  }
+  if (window.teacherSetSystemOpen) {
+    await window.teacherSetSystemOpen(true);
+    updateSystemOpenUI(true);
+  }
+};
+window.teacherCloseTest = async () => {
+  if (!teacherSessionUnlocked) {
+    openPwdModal();
+    return;
+  }
+  const ok = confirm('確定要關閉測驗嗎？關閉後學生不能再進入或繼續作答。');
+  if (!ok) return;
+  if (window.teacherSetSystemOpen) {
+    await window.teacherSetSystemOpen(false);
+    updateSystemOpenUI(false);
+    if (window.teacherResetExam) await window.teacherResetExam();
+  }
+};
 function enterMode(mode) {
+  if ((mode === 'student' || mode === 'async') && !isExamOpen()) {
+    showClosedNotice();
+    return;
+  }
   currentMode = mode;
   document.getElementById('mode-selector').classList.add('hidden');
   document.getElementById('app-header').classList.remove('hidden');
@@ -1485,6 +1611,10 @@ window.toggleLTimer = n => {
 
 const recState = {};
 window.toggleRec = async id => {
+  if (currentMode !== 'teacher' && !isExamOpen()) {
+    showClosedNotice();
+    return;
+  }
   if (recState[id] && recState[id].active) { stopRec(id); return; }
   
   // 1. 檢查環境支援度 (必須在 HTTPS 下執行)
@@ -1598,3 +1728,4 @@ window.stopRec = id => {
 </script>
 </body>
 </html>
+
