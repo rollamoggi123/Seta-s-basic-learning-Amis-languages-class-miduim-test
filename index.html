@@ -981,13 +981,15 @@ function verifyTeacherPwd() {
   if (pwd === '0901') { // 這裡設定密碼
     closePwdModal();
     enterMode('teacher');
+    if (pendingTeacherMode === 'split' && !isSplitActive) {
+      setTimeout(() => window.toggleSplitView(), 0);
+    }
   } else {
     if (err) err.style.display = 'block';
     input.value = '';
     input.focus();
   }
 }
-
 function enterMode(mode) {
   currentMode = mode;
   document.getElementById('mode-selector').classList.add('hidden');
